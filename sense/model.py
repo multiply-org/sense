@@ -74,7 +74,7 @@ class SingleScatRT(Model):
         self.models = kwargs.get('models', None)
         self.freq = kwargs.get('freq', None)
         self.coherent = kwargs.get('coherent', True)  # use coherent simulations as default
-        
+
         self._check()
 
     def _check(self):
@@ -95,7 +95,7 @@ class SingleScatRT(Model):
         # ground backscatter = attenuated surface
         self.G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta, freq=self.freq)
         self.s0g = self.G.sigma()  # returns dictionary with different components
-        
+
         # canopy contribution
         self.s0c = self.G.rt_c.sigma_c()   # returns a dictionary
 
@@ -150,7 +150,7 @@ class Ground(object):
         self.theta = theta
         self._check(RT_s, RT_c)
         self.freq = freq
-        assert self.freq is not None, 'Frequency needsto be provided'
+        assert self.freq is not None, 'Frequency needs to be provided'
         self._set_models(RT_s, RT_c)
         self._calc_rho()
 
@@ -303,7 +303,7 @@ class CanopyHomoRT(object):
 
     def _check(self):
         assert self.stype is not None
-        
+
         assert self.ke_h is not None
         assert self.ke_v is not None
         assert self.ks_h is not None
@@ -384,7 +384,7 @@ class CanopyHomoRT(object):
         #b=1.5*self.ks_h
         #print a,b,a-b, a/b, self.ks_h
 
-        return {'hh' : s_hh, 'vv' : s_vv, 'hv' : s_hv} 
+        return {'hh' : s_hh, 'vv' : s_vv, 'hv' : s_hv}
 
 
 # 502-503

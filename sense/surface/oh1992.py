@@ -51,7 +51,7 @@ class Oh92(SurfaceScatter):
     def _calc_vv(self):
 
         a = 0.7*(1.-np.exp(-0.65*self.ks**1.8))
-        b = np.cos(self.theta)**3. * (self.G.v+self.G.h) / np.sqrt(self.p) 
+        b = np.cos(self.theta)**3. * (self.G.v+self.G.h) / np.sqrt(self.p)
         return a*b
 
     def plot(self):
@@ -62,8 +62,8 @@ class Oh92(SurfaceScatter):
         ax.plot(t, 10.*np.log10(self.vv), color='red', label='vv')
         ax.plot(t, 10.*np.log10(self.hv), color='green', label='hv')
         ax.grid()
-        #ax.set_ylim(-25.,0.)
-        #ax.set_xlim(0.,70.)
+        ax.set_ylim(-25.,0.)
+        ax.set_xlim(0.,70.)
         ax.legend()
         ax.set_xlabel('incidence angle [deg]')
         ax.set_ylabel('backscatter [dB]')
