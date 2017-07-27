@@ -22,9 +22,11 @@ eps = 30.8-40.j   # note that normally the imagionary part is supposed to be neg
 freq = 1.  # GH
 s = 0.05  # m
 ks = (2.*np.pi/f2lam(freq))*s
+
 theta = np.deg2rad(np.arange(0.,70.) )
 
 O = Oh92(eps, ks, theta)
 O.plot()
+
 
 plt.show()
