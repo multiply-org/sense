@@ -3,6 +3,8 @@ implements the Dubois95 model
 as described in Ulaby (2014), Chapter 10.6
 """
 import numpy as np
+import matplotlib.pyplot as plt
+
 from . scatter import SurfaceScatter
 
 class Dubois95(SurfaceScatter):
@@ -43,4 +45,17 @@ class Dubois95(SurfaceScatter):
         d = (ks*np.sin(self.theta))**1.1*lam**0.7
 
         return b*c*d
-
+    
+    def plot(self):
+        f = plt.figure()
+        ax = f.add_subplot(111)
+        t = np.rad2deg(self.theta)
+        ax.plot(t, 10.*np.log10(self.hh), color='blue', label='hh')
+        ax.plot(t, 10.*np.log10(self.vv), color='red', label='vv')
+       # ax.plot(t, 10.*np.log10(self.hv), color='green', label='hv')
+        ax.grid()
+        ax.set_ylim(-25.,0.)
+        ax.set_xlim(0.,70.)
+        ax.legend()
+        ax.set_xlabel('incidence angle [deg]')
+        ax.set_ylabel('backscatter [dB]')
