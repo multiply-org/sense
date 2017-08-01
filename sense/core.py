@@ -6,7 +6,7 @@ class Fresnel0(object):
         """
         calculate the Nadir Fresnel reflectivity
         e.g. Ulaby (2014), eq. 10.36
-        
+
         Parameters
         ----------
         e : complex
@@ -49,10 +49,27 @@ class Reflectivity(object):
         calculate reflection coefficients
         Woodhouse, 2006; Eq. 5.54, 5.55
         """
+        # OLD
         co = np.cos(self.theta)
         si2 = np.sin(self.theta)**2.
         self.rho_v = (self.eps*co-np.sqrt(self.eps-si2))/(self.eps*co+np.sqrt(self.eps-si2))
         self.rho_h = (co-np.sqrt(self.eps-si2))/(co+np.sqrt(self.eps-si2))
+
+        srv = self.rho_v
+        srh = self.rho_h
+
+        # FROM PRISM1_FORWARDMODEL-1.m
+        n1 = np.sqrt(1.)
+        n2 = np.sqrt(self.eps)
+        costh2 = np.sqrt(1-(n1*np.sin(self.theta)/2.)**2)
+
+        self.rho_v = -(n2*np.cos(self.theta) - n1*costh2)/(n2*np.cos(self.theta) + n1*costh2)
+        self.rho_h = (n1*np.cos(self.theta) - n2*costh2)/(n1*np.cos(self.theta) + n2*costh2)
+
+        plt.plot(np.rad2deg(self.theta), self.rho_v-srv, label = 'v_diff')
+        plt.plot(np.rad2deg(self.theta), self.rho_h-srh, label = 'h_diff')
+        plt.legend()
+        #doesn't make much difference in results!
 
     def plot(self):
         f = plt.figure()

@@ -37,4 +37,9 @@ O = Oh92(eps, ks, theta)
 O.plot()
 
 d =  Dubois95(eps, ks, theta, f2lam(freq))
-d.plot()
+#d.plot()
+
+o = Oh92(eps, ks, np.deg2rad(20))
+print(o.vv)
+print(o.hh)
+print(o.hv)

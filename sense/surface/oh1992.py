@@ -36,14 +36,16 @@ class Oh92(SurfaceScatter):
         self._calc_p()
         self._calc_q()
 
-        # calculate backascatter
-        self.vv = self._calc_vv()
-        self.hh = self.p * self.vv
-        self.hv = self.q * self.vv
+        # calculate backscatter
+        # (added 10*np.log10() like in PRISM1_FORWARDMODEL-1.m)
+        self._vv0 = self._calc_vv()
+        self.vv = 10*np.log10(self._vv0)
+        self.hh = 10*np.log10(self.p * self._vv0)
+        self.hv = 10*np.log10(self.q * self._vv0)
 
     def _calc_p(self):
         a = 1./(3.*self.G0.x)
-        self.p = (1.- (2.*self.theta/np.pi)**a * np.exp(-self.ks)     )**2.
+        self.p = (1. - (2.*self.theta/np.pi)**a * np.exp(-self.ks))**2.
 
     def _calc_q(self):
         self.q = 0.23*(self.G0.x)**0.5 * (1.-np.exp(-self.ks))
@@ -58,9 +60,9 @@ class Oh92(SurfaceScatter):
         f = plt.figure()
         ax = f.add_subplot(111)
         t = np.rad2deg(self.theta)
-        ax.plot(t, 10.*np.log10(self.hh), color='blue', label='hh')
-        ax.plot(t, 10.*np.log10(self.vv), color='red', label='vv')
-        ax.plot(t, 10.*np.log10(self.hv), color='green', label='hv')
+        ax.plot(t, self.hh, color='blue', label='hh')
+        ax.plot(t, self.vv, color='red', label='vv')
+        ax.plot(t, self.hv, color='green', label='hv')
         ax.grid()
         ax.set_ylim(-25.,0.)
         ax.set_xlim(0.,70.)
