@@ -31,7 +31,7 @@ freq = 1.  # GH
 s = 0.05  # m
 ks = (2.*np.pi/f2lam(freq))*s
 
-theta = np.deg2rad(np.arange(0.,70.) )
+theta = np.deg2rad(np.arange(0.,71.) )
 
 O = Oh92(eps, ks, theta)
 O.plot()
