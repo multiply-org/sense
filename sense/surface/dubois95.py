@@ -25,8 +25,7 @@ class Dubois95(SurfaceScatter):
     def _calc_sigma(self):
         lam = self.lam*100.  # from m in cm
         ks = self.ks/100  # This line reproduces ULABY value. s is in cm, here!
-        # (added 10*np.log10() like in SMART_FORWARDMODEL.m)
-        return 10.*np.log10(self._vv(lam, ks)), 10.*np.log10(self._hh(lam, ks))
+        return self._vv(lam, ks), self._hh(lam, ks)
 
     def _hh(self, lam, ks):
         """
@@ -52,8 +51,8 @@ class Dubois95(SurfaceScatter):
         f = plt.figure()
         ax = f.add_subplot(111)
         t = np.rad2deg(self.theta)
-        ax.plot(t, self.hh, color='blue', label='hh')
-        ax.plot(t, self.vv, color='red', label='vv')
+        ax.plot(t, 10.*np.log10(self.hh), color='blue', label='hh')
+        ax.plot(t, 10.*np.log10(self.vv), color='red', label='vv')
        # ax.plot(t, 10.*np.log10(self.hv), color='green', label='hv')
         ax.grid()
         ax.set_ylim(-35.,-5.)
