@@ -120,7 +120,6 @@ class SingleScatRT(Model):
             return None
         return self.s0g[k] + self.s0c[k] + self.s0gcg[k] + self.s0cgt[k]
 
-
 class Ground(object):
     """
     calculate the (attenuated) ground contribution
@@ -344,9 +343,6 @@ class CanopyHomoRT(object):
         """
         return self.SC.sigma_v_bist()
 
-
-
-
     def _tau(self, k):
         # assumption: extinction is isotropic
         return k*self.d/np.cos(self.theta)
@@ -367,8 +363,6 @@ class CanopyHomoRT(object):
         """
         return G_v*G_h*(self.t_h*self.t_v-self.t_h**2.*self.t_v**2.)*(self.sigma_vol*np.cos(self.theta))/(self.ke_h+self.ke_v)
 
-
-
     def sigma_c(self):
         """
         calculate canopy volume contribution only
@@ -380,9 +374,9 @@ class CanopyHomoRT(object):
         s_hv = (1.-self.t_h*self.t_v)*(self.sigma_vol_back['hv']*np.cos(self.theta))/(self.ke_h+self.ke_v)
 
         # this seems o.k. here
-        #a=self.sigma_vol_back['hh']
-        #b=1.5*self.ks_h
-        #print a,b,a-b, a/b, self.ks_h
+#        a=self.sigma_vol_back['hh']
+#        b=1.5*self.ks_h
+#        print a,b,a-b, a/b, self.ks_h
 
         return {'hh' : s_hh, 'vv' : s_vv, 'hv' : s_hv}
 

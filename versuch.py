@@ -55,16 +55,32 @@ S.sigma0()
 
 theta = np.deg2rad(np.arange(5.,80.))
 # theta = np.deg2rad(25.)
-freq = 5.
+freq = 1.
 
 stype = 'turbid_rayleigh'
 stype='turbid_isotropic'
 models = {'surface': 'Oh92', 'canopy': stype}
-eps = 15. -3.j
-d = 1.
+eps = 30.8 - 0.j
+d = 3.
 ke = 1.
-omega=0.2
-soil = Soil(eps=eps, f=5., s=0.02)
+omega=0.1
+soil = Soil(eps=eps, f=1., s=0.05)
+can = OneLayer(ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke)
+S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
+S.sigma0()
+
+theta = np.deg2rad(np.arange(0.,80.))
+# theta = np.deg2rad(25.)
+freq = 3.
+
+stype = 'turbid_rayleigh'
+#stype='turbid_isotropic'
+models = {'surface': 'Oh92', 'canopy': stype}
+mv = 0.2
+d = 0.22
+ke = 1.
+omega=0.1
+soil = Soil(mv=mv, f=3., s=0.01, clay=0.5, sand=0.5)
 can = OneLayer(ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke)
 S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
 S.sigma0()
@@ -72,15 +88,15 @@ S.sigma0()
 
 f = plt.figure()
 ax = f.add_subplot(111)
-# ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['s0g']['vv']), color='red', linestyle='-', label='vv s0g')
-# ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['s0c']['vv']), color='blue', linestyle='-', label='vv s0c')
-# ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['s0cgt']['vv']), color='green', linestyle='-', label='vv s0cgt')
+ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['s0g']['vv']), color='red', linestyle='-', label='vv s0g')
+ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['s0c']['vv']), color='blue', linestyle='-', label='vv s0c')
+ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['s0cgt']['vv']), color='green', linestyle='-', label='vv s0cgt')
 ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['stot']['vv']), color='black', linestyle='-', label='vv stot')
-# ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['s0gcg']['vv']), color='black', linestyle='--', label='vv s0gcg')
-ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['stot']['hh']), color='orange', linestyle='-', label='hh stot')
-ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['stot']['hv']), color='purple', linestyle='-', label='hv stot')
+ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['s0gcg']['vv']), color='black', linestyle='--', label='vv s0gcg')
+#ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['stot']['hh']), color='orange', linestyle='-', label='hh stot')
+#ax.plot(np.rad2deg(S.__dict__['theta']), 10*np.log10(S.__dict__['stot']['hv']), color='purple', linestyle='-', label='hv stot')
 # ax.plot(np.rad2deg(self.theta), self.h, color='blue', linestyle='--', label='H')
-ax.set_ylim(-14.,-5.)
+#ax.set_ylim(-14.,-5.)
 ax.set_xlim(0.,70.)
 ax.grid()
 ax.legend(loc = 3)
