@@ -27,6 +27,3 @@ theta = np.deg2rad(np.arange(0.,70.) )
 
 O = Oh92(eps, ks, theta)
 O.plot()
-
-
-plt.show()

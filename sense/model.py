@@ -171,11 +171,8 @@ class Ground(object):
         """
 
         R = Reflectivity(self.S.eps, self.theta)
-
-        self.rho_v = R.v
-        self.rho_h = R.h
-        # self.rho_v = R.v * np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
-        # self.rho_h = R.h * np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
+        self.rho_v = R.v #* np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
+        self.rho_h = R.h #* np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
 
     def _set_models(self, RT_s, RT_c):
         # set surface model
@@ -345,6 +342,9 @@ class CanopyHomoRT(object):
         of scatterer
         """
         return self.SC.sigma_v_bist()
+
+
+
 
     def _tau(self, k):
         # assumption: extinction is isotropic

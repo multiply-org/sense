@@ -25,10 +25,10 @@ import numpy as np
 
 plt.close('all')
 
-eps = 30.8-0.j   # note that normally the imagionary part is supposed to be negative!
+eps = 15-0.j   # note that normally the imagionary part is supposed to be negative!
 
-freq = 1.  # GH
-s = 0.05  # m
+freq = 5.  # GH
+s = 0.02  # m
 ks = (2.*np.pi/f2lam(freq))*s
 
 theta = np.deg2rad(np.arange(0.,71.) )
@@ -39,10 +39,10 @@ O.plot()
 d =  Dubois95(eps, ks, theta, f2lam(freq))
 d.plot()
 
-o = Oh92(eps, ks, np.deg2rad(20))
-print(o.vv)
-print(o.hh)
-print(o.hv)
+o = Oh92(eps, ks, np.deg2rad(50))
+print(10*np.log10(o.vv))
+print(10*np.log10(o.hh))
+print(10*np.log10(o.hv))
 
 d = Dubois95(eps, ks, np.deg2rad(40), f2lam(freq))
 print(d.vv)

@@ -54,10 +54,10 @@ class Reflectivity(object):
         si2 = np.sin(self.theta)**2.
         self.rho_v = (self.eps*co-np.sqrt(self.eps-si2))/(self.eps*co+np.sqrt(self.eps-si2))
         self.rho_h = (co-np.sqrt(self.eps-si2))/(co+np.sqrt(self.eps-si2))
-#
+
 #        srv = self.rho_v
 #        srh = self.rho_h
-
+#
 #        # FROM PRISM1_FORWARDMODEL-1.m
 #        n1 = np.sqrt(1.)
 #        n2 = np.sqrt(self.eps)
