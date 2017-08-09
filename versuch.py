@@ -27,11 +27,13 @@ stype = 'turbid_rayleigh'
 #stype='turbid_isotropic'
 models = {'surface': 'Oh92', 'canopy': stype}
 eps = 15. -0.j
-d = 1.
+s=0.02
+d = 0.22
 ke = 1.
 omega=0.2
 
-soil = Soil(eps=eps, f=freq, s=0.02)
+
+soil = Soil(eps=eps, f=freq, s=s)
 can = OneLayer(ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke)
 S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
 S.sigma0()
