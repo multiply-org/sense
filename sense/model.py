@@ -232,8 +232,6 @@ class Ground(object):
             n = 1.
 
         s_vv = n  * self.rt_c.sigma_vol_bistatic['vv'] * self.C.d *(self.rho_v + self.rho_v)*self.rt_c.t_v*self.rt_c.t_v
-        print(self.rt_c.sigma_vol_bistatic['vv'])
-        print(n)
         s_hh = n  * self.rt_c.sigma_vol_bistatic['hh'] * self.C.d *(self.rho_h + self.rho_h)*self.rt_c.t_h*self.rt_c.t_h
         s_hv = 1. * self.rt_c.sigma_vol_bistatic['hv'] * self.C.d *(self.rho_v + self.rho_h)*self.rt_c.t_h*self.rt_c.t_v
 
