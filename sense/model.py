@@ -86,6 +86,9 @@ class SingleScatRT(Model):
         for k in ['surface', 'canopy']:
             assert k in self.models.keys()  # check that all models have been specified
 
+        assert self.freq == self.surface.f, "Different frequencies in model and soil definition"
+            # check that frequencies are the same!
+
     def _sigma0(self):
         """
         basic calculation of Sigma0
