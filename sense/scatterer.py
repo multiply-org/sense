@@ -4,7 +4,7 @@ Definition of scatter types
 
 class Scatterer(object):
     def __init__(self, **kwargs):
-        # NOTE THAT THE arguments are not necessarily the 
+        # NOTE THAT THE arguments are not necessarily the
         # particle scattering cross sections!!!!
         # need to be made in a clearer way !!!!
         self.sigma_s_hh = kwargs.get('sigma_s_hh', None)  # particle scattering cross area
