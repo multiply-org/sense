@@ -4,7 +4,7 @@
 # Author: "Alexander Löw"
 # Date:
 # Last Modified by:   "Thomas Weiß"
-# Last Modified time: 2017-07-28 16:47:06
+# Last Modified time: 2017-08-09 11:09:22
 
 """
 aAJHFHASfdjklA
@@ -68,7 +68,7 @@ from sense.util import f2lam
 
 theta = np.deg2rad(np.arange(5.,80.))
 # theta = np.deg2rad(25.)
-freq = 5.
+# freq = 5.
 
 # stype = 'turbid_rayleigh'
 # # stype='turbid_isotropic'
@@ -92,7 +92,7 @@ mv = 0.2
 d = 0.22
 ke = 1.
 omega=0.2
-soil = Soil(eps=eps, f=5., s=0.02)
+soil = Soil(eps=eps, f=1., s=0.02)
 can = OneLayer(ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke)
 S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
 S.sigma0()
@@ -114,7 +114,7 @@ ax.grid()
 ax.legend(loc = 3)
 plt.show()
 
-print "yes"
+# print "yes"
 
 
 # xxx=Prevot93_surface(mv=0.25, theta=np.radians(23), C2=0.153, D=0.304, C1=-11.2)
