@@ -171,8 +171,8 @@ class Ground(object):
         """
 
         R = Reflectivity(self.S.eps, self.theta)
-        self.rho_v = R.v #* np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
-        self.rho_h = R.h #* np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
+        self.rho_v = R.v * np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
+        self.rho_h = R.h * np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
 
     def _set_models(self, RT_s, RT_c):
         # set surface model
