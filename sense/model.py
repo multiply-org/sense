@@ -86,6 +86,9 @@ class SingleScatRT(Model):
         for k in ['surface', 'canopy']:
             assert k in self.models.keys()  # check that all models have been specified
 
+        assert self.freq == self.surface.f, "Different frequencies in model and soil definition"
+            # check that frequencies are the same!
+
     def _sigma0(self):
         """
         basic calculation of Sigma0
@@ -118,7 +121,7 @@ class SingleScatRT(Model):
             return None
         if self.s0c[k] is None:
             return None
-        return self.s0g[k] + self.s0c[k] + self.s0gcg[k] + self.s0cgt[k]
+        return np.nansum(np.array([self.s0g[k], self.s0c[k], self.s0gcg[k], self.s0cgt[k]]))
 
 class Ground(object):
     """
