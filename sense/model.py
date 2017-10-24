@@ -121,7 +121,7 @@ class SingleScatRT(Model):
             return None
         if self.s0c[k] is None:
             return None
-        return self.s0g[k] + self.s0c[k] + self.s0gcg[k] + self.s0cgt[k]
+        return np.nansum(np.array([self.s0g[k], self.s0c[k], self.s0gcg[k], self.s0cgt[k]]))
 
 class Ground(object):
     """
