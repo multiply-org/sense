@@ -1,9 +1,9 @@
 """
 Basic class for scattering modelling
 """
-
+import pdb
 import numpy as np
-from . surface import Oh92, Dubois95
+from . surface import Oh92, Dubois95, WaterCloudSurface
 from . util import f2lam
 from . scatterer import ScatIso, ScatRayleigh
 from . core import Reflectivity
@@ -50,6 +50,71 @@ class Model(object):
         for k in self.pol:
             if k not in ['HH','VV','HV','VH']:
                 assert False, 'Invalid polarization: ' + k
+
+class WaterCloud(Model):
+    def __init__(self, **kwargs):
+        """
+        """
+        super(WaterCloud, self).__init__(**kwargs)
+        self.surface = kwargs.get('surface', None)
+        self.canopy = kwargs.get('canopy', None)
+        self.models = kwargs.get('models', None)
+        self.freq = kwargs.get('freq', None)
+        self.coherent = kwargs.get('coherent', True)  # use coherent simulations as default
+
+        self._check()
+
+    def _check(self):
+        assert self.surface is not None
+        assert self.canopy is not None
+        assert self.models is not None
+        assert self.freq is not None
+
+        for k in ['surface', 'canopy']:
+            assert k in self.models.keys()  # check that all models have been specified
+
+        assert self.freq == self.surface.f, "Different frequencies in model and soil definition"
+            # check that frequencies are the same!
+
+    def _sigma0(self):
+        """
+        basic calculation of Sigma0
+        based on Eq. 11.17 in Ulaby and Long (2014)
+        """
+
+        # ground backscatter = attenuated surface
+        self.G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta, freq=self.freq)
+        self.s0g = self.G.sigma()  # returns dictionary with different components
+
+        # canopy contribution
+        self.s0c = self.G.rt_c.sigma_c()   # returns a dictionary
+
+        # total canopy ground contribution
+        # self.s0cgt = self.G.sigma_c_g(self.coherent)
+
+        # ground-canopy-ground interaction
+        # self.s0gcg = self.G.sigma_g_c_g()
+
+        # combine backscatter values
+        self.stot = {}
+        for k in ['hh', 'vv', 'hv']:
+            self.stot.update({k : self._combine(k)})
+
+    def _combine(self, k):
+        """        assert self.A_hh is not None
+        assert self.B_hh is not None
+        assert self.A_vv is not None
+        assert self.B_vv is not None
+        combine previous calculated backscatter values
+        """
+        if self.s0g[k] is None:
+            return None
+        if self.s0c[k] is None:
+            return None
+
+        # return np.nansum(np.array([self.s0g[k], self.s0c[k]]))
+        return np.array([self.s0g[k]+self.s0c[k]])
+
 
 
 
@@ -121,7 +186,8 @@ class SingleScatRT(Model):
             return None
         if self.s0c[k] is None:
             return None
-        return np.nansum(np.array([self.s0g[k], self.s0c[k], self.s0gcg[k], self.s0cgt[k]]))
+        # return np.nansum(np.array([self.s0g[k], self.s0c[k], self.s0gcg[k], self.s0cgt[k]]))
+        return np.array([self.s0g[k] + self.s0c[k] + self.s0gcg[k] + self.s0cgt[k]])
 
 class Ground(object):
     """
@@ -154,7 +220,8 @@ class Ground(object):
         self.freq = freq
         assert self.freq is not None, 'Frequency needs to be provided'
         self._set_models(RT_s, RT_c)
-        self._calc_rho()
+        if RT_s != 'WaterCloud':
+            self._calc_rho()
 
     def _calc_rho(self):
         """
@@ -183,6 +250,8 @@ class Ground(object):
             self.rt_s = Oh92(self.S.eps, self.S.ks, self.theta)
         elif RT_s == 'Dubois95':
             self.rt_s = Dubois95(self.S.eps, self.S.ks, self.theta, lam=f2lam(self.freq))
+        elif RT_s == 'WaterCloud':
+            self.rt_s = WaterCloudSurface(self.S.mv, self.theta, self.S.C_hh, self.S.C_vv, self.S.D_hh, self.S.D_vv)
         else:
             assert False, 'Unknown surface scattering model'
 
@@ -192,12 +261,15 @@ class Ground(object):
             self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, ks_h=self.C.ks_h, ks_v=self.C.ks_v, d=self.C.d, theta=self.theta, stype='iso')
         elif RT_c == 'turbid_rayleigh':
             self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, ks_h=self.C.ks_h, ks_v=self.C.ks_v, d=self.C.d, theta=self.theta, stype='rayleigh')
+
+        elif RT_c == 'water_cloud':
+            self.rt_c = WaterCloudCanopy(A_hh=self.C.A_hh, B_hh=self.C.B_hh, A_vv=self.C.A_vv, B_vv=self.C.B_vv, V1=self.C.V1, V2=self.C.V2, theta=self.theta)
         else:
             assert False, 'Invalid canopy scattering model: ' + RT_c
 
     def _check(self, RT_s, RT_c):
-        valid_surface = ['Oh92', 'Dubois95']
-        valid_canopy = ['turbid_rayleigh', 'turbid_isotropic']
+        valid_surface = ['Oh92', 'Dubois95', 'WaterCloud']
+        valid_canopy = ['turbid_rayleigh', 'turbid_isotropic', 'water_cloud']
         assert RT_s in valid_surface, 'ERROR: invalid surface scattering model was chosen!'
         assert RT_c in valid_canopy, 'ERROR: invalid canopy model: ' + RT_c
         assert self.theta is not None
@@ -388,6 +460,59 @@ class CanopyHomoRT(object):
 
 
 # 502-503
+
+
+class WaterCloudCanopy(object):
+    """
+
+    """
+    def __init__(self, **kwargs):
+        """
+        Parameters
+        ----------
+        A, B : float
+            fitting parameters
+        V1: float
+            vegetation descriptor
+        V2: float
+            vegetation descriptor
+        theta : float, ndarray
+            incidence angle [rad]
+        """
+
+        self.A_hh = kwargs.get('A_hh', None)
+        self.B_hh = kwargs.get('B_hh', None)
+        self.A_vv = kwargs.get('A_vv', None)
+        self.B_vv = kwargs.get('B_vv', None)
+        self.V1 = kwargs.get('V1', None)
+        self.V2 = kwargs.get('V2', None)
+        self.theta = kwargs.get('theta', None)
+        self.tau_h = self._tau(self.B_hh)
+        self.tau_v = self._tau(self.B_vv)
+        self.t_h = np.sqrt(self.tau_h)
+        self.t_v = np.sqrt(self.tau_v)
+
+    def _check(self):
+        assert self.A_hh is not None
+        assert self.B_hh is not None
+        assert self.A_vv is not None
+        assert self.B_vv is not None
+        assert self.V1 is not None
+        assert self.V2 is not None
+        assert self.theta is not None
+
+    def sigma_c(self):
+        # change vh !!!!!!!!!!!!!!!!!!!!!!!!!!!111
+        s_hh =  self.A_hh * self.V1 * np.cos(self.theta) * (1 - self._tau(self.B_hh))
+        s_vv = self.A_vv * self.V1 * np.cos(self.theta) * (1 - self._tau(self.B_vv))
+        s_hv =  self.A_vv * self.V1 * np.cos(self.theta) * (1 - self._tau(self.B_vv))
+
+        return {'hh' : s_hh, 'vv' : s_vv, 'hv' : s_hv}
+
+    def _tau(self, B):
+        return np.exp(-2 * B / np.cos(self.theta) * self.V2)
+
+
 
 
 
