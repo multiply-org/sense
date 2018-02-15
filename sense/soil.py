@@ -21,7 +21,7 @@ class Soil(object):
         l : float
             optional: autocorrelation length
         acl : str
-            identifier for sphape of autocorrelation fucntion 
+            identifier for sphape of autocorrelation fucntion
             G = Gaussian
             E = Exponential
         mv : float
@@ -49,7 +49,7 @@ class Soil(object):
 
         # wavenumber
         self.k = 2.*np.pi / f2lam(self.f)  # note that wavenumber is in meter and NOT in cm!
-        
+
         # roughness parameters
         self.ks = self.s*self.k
         if self.l is not None:
@@ -58,19 +58,27 @@ class Soil(object):
             self.kl = None
 
 
+        self.C_hh = kwargs.get('C_hh', None)
+        self.D_hh = kwargs.get('D_hh', None)
+        self.C_vv = kwargs.get('C_vv', None)
+        self.D_vv = kwargs.get('D_vv', None)
+        self.V2 = kwargs.get('V2', None)
+
+
+
     def _convert_mv2eps(self):
         """
-        convert mv to eps 
+        convert mv to eps
         using dielectric model
         """
         if (self.clay is None) or (self.sand is None):
             self.eps = None
             print('WARNING: Permittivity can not be calculated due to missing soil texture!')
         if self.dc_model == 'Dobson85':
-            DC = Dobson85(clay=self.clay, sand=self.sand, mv=self.mv, freq=self.f) 
+            DC = Dobson85(clay=self.clay, sand=self.sand, mv=self.mv, freq=self.f)
         else:
             assert False, 'Invalid DC model! ' + self.dc_model
-        
+
         self.eps = DC.eps
 
 
