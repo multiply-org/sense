@@ -10,16 +10,20 @@ class SurfaceScatter(object):
         self._check()
 
     def _check(self):
-        assert isinstance(self.eps, complex)
+        assert isinstance(self.eps[0], complex)
 
-class SurfaceScatterWaterCloudModel(object):
-    def __init__(self, mv, theta, C=None, C1=None, C2=None, D=None):
+class SurfaceScatterWaterCloud(object):
+    def __init__(self, mv, theta, C_hh=None, C_vv=None, D_hh=None, D_vv=None):
         self.mv = mv
         self.theta = theta
-        self.C = C
-        self.C1 = C1
-        self.C2 = C2
-        self.D = D
+        self.C_hh = C_hh
+        self.C_vv = C_vv
+        self.D_hh = D_hh
+        self.D_vv = D_vv
+
+    def _check(self):
+        #needs to be implemented
+        pass
 
 
 
