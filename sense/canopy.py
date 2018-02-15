@@ -27,3 +27,20 @@ class OneLayer(Canopy):
         assert self.ks_h is not None
         assert self.ks_v is not None
 
+
+class WaterCloudLayer(object):
+    """
+    """
+    def __init__(self, **kwargs):
+        self.A_hh = kwargs.get('A_hh', None)
+        self.B_hh = kwargs.get('B_hh', None)
+        assert self.A_hh is not None
+        assert self.B_hh is not None
+        self.A_vv = kwargs.get('A_vv', None)
+        self.B_vv = kwargs.get('B_vv', None)
+        assert self.A_vv is not None
+        assert self.B_vv is not None
+        self.V1 = kwargs.get('V1', None)
+        self.V2 = kwargs.get('V2', None)
+        assert self.V1 is not None
+        assert self.V2 is not None
