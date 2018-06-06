@@ -10,7 +10,8 @@ class SurfaceScatter(object):
         self._check()
 
     def _check(self):
-        assert isinstance(self.eps[0], complex)
+        pass
+        # assert isinstance(self.eps, complex)
 
 class SurfaceScatterWaterCloud(object):
     def __init__(self, mv, theta, C_hh=None, C_vv=None, D_hh=None, D_vv=None):

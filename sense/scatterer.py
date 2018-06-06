@@ -26,8 +26,8 @@ class ScatIso(Scatterer):
     def __init__(self, **kwargs):
         super(ScatIso, self).__init__(**kwargs)
         # scattering coefficients need to be the same in isotropic case (eq. 11.19)
-        assert self.sigma_s_hh == self.sigma_s_vv
-        assert self.sigma_s_hh == self.sigma_s_hv
+        # assert self.sigma_s_hh == self.sigma_s_vv
+        # assert self.sigma_s_hh == self.sigma_s_hv
 
     def sigma_v_back(self):
         """

@@ -4,6 +4,7 @@ Class specifying a soil
 import numpy as np
 from . util import f2lam
 from . dielectric import Dobson85
+import pdb
 
 class Soil(object):
     def __init__(self, **kwargs):
@@ -21,11 +22,9 @@ class Soil(object):
         l : float
             optional: autocorrelation length
         acl : str
-            identifier for sphape of autocorrelation fucntion
+            identifier for shape of autocorrelation function
             G = Gaussian
             E = Exponential
-        mv : float
-            volumetric moisture content [m**3/m**3]
         clay : float
             optional fractional clay content
         sand : float
@@ -57,14 +56,12 @@ class Soil(object):
         else:
             self.kl = None
 
-
+        # Empirical soil parameters for Water Cloud model
         self.C_hh = kwargs.get('C_hh', None)
         self.D_hh = kwargs.get('D_hh', None)
         self.C_vv = kwargs.get('C_vv', None)
         self.D_vv = kwargs.get('D_vv', None)
         self.V2 = kwargs.get('V2', None)
-
-
 
     def _convert_mv2eps(self):
         """
@@ -80,8 +77,6 @@ class Soil(object):
             assert False, 'Invalid DC model! ' + self.dc_model
 
         self.eps = DC.eps
-
-
 
     def _convert_eps2mv(self):
         """

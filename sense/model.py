@@ -210,18 +210,52 @@ class Ground(object):
             key describing the surface scattering model
         RT_c : str
             key specifying the canopy scattering model
+        theta : float/array
+            incidence angle [rad]
         freq : float
             frequency[GHz]
         """
         self.S = S
         self.C = C
         self.theta = theta
+        assert self.theta is not None, 'Theta/incidence angle needs to be provided'
         self._check(RT_s, RT_c)
         self.freq = freq
         assert self.freq is not None, 'Frequency needs to be provided'
         self._set_models(RT_s, RT_c)
-        if RT_s != 'WaterCloud':
-            self._calc_rho()
+        self._calc_rho()
+
+    def _check(self, RT_s, RT_c):
+        valid_surface = ['Oh92', 'Dubois95', 'WaterCloud']
+        valid_canopy = ['turbid_rayleigh', 'turbid_isotropic', 'water_cloud']
+        assert RT_s in valid_surface, 'ERROR: invalid surface scattering model was chosen!'
+        assert RT_c in valid_canopy, 'ERROR: invalid canopy model: ' + RT_c
+
+    def _set_models(self, RT_s, RT_c):
+        # set surface model
+        if RT_s == 'Oh92':
+            self.rt_s = Oh92(self.S.eps, self.S.ks, self.theta)
+        elif RT_s == 'Dubois95':
+            self.rt_s = Dubois95(self.S.eps, self.S.ks, self.theta, lam=f2lam(self.freq))
+        elif RT_s == 'WaterCloud':
+            if (self.S.C_hh is None) or (self.S.D_hh is None) or (self.S.C_vv is None) or (self.S.D_vv is None):
+                assert False, 'Empirical surface parameters for Water Cloud model not specified!'
+            else:
+                self.rt_s = WaterCloudSurface(self.S.mv, self.theta, self.S.C_hh, self.S.C_vv, self.S.D_hh, self.S.D_vv)
+        else:
+            assert False, 'Unknown surface scattering model'
+
+
+        # set canopy models
+        if RT_c == 'turbid_isotropic':  # turbid media (homogenous vegetation)
+            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, ks_h=self.C.ks_h, ks_v=self.C.ks_v, d=self.C.d, theta=self.theta, stype='iso')
+        elif RT_c == 'turbid_rayleigh':
+            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, ks_h=self.C.ks_h, ks_v=self.C.ks_v, d=self.C.d, theta=self.theta, stype='rayleigh')
+
+        elif RT_c == 'water_cloud':
+            self.rt_c = WaterCloudCanopy(A_hh=self.C.A_hh, B_hh=self.C.B_hh, A_vv=self.C.A_vv, B_vv=self.C.B_vv, V1=self.C.V1, V2=self.C.V2, theta=self.theta)
+        else:
+            assert False, 'Invalid canopy scattering model: ' + RT_c
 
     def _calc_rho(self):
         """
@@ -244,35 +278,6 @@ class Ground(object):
         self.rho_v = R.v * np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
         self.rho_h = R.h * np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
 
-    def _set_models(self, RT_s, RT_c):
-        # set surface model
-        if RT_s == 'Oh92':
-            self.rt_s = Oh92(self.S.eps, self.S.ks, self.theta)
-        elif RT_s == 'Dubois95':
-            self.rt_s = Dubois95(self.S.eps, self.S.ks, self.theta, lam=f2lam(self.freq))
-        elif RT_s == 'WaterCloud':
-            self.rt_s = WaterCloudSurface(self.S.mv, self.theta, self.S.C_hh, self.S.C_vv, self.S.D_hh, self.S.D_vv)
-        else:
-            assert False, 'Unknown surface scattering model'
-
-
-        # set canopy models
-        if RT_c == 'turbid_isotropic':  # turbid media (homogenous vegetation)
-            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, ks_h=self.C.ks_h, ks_v=self.C.ks_v, d=self.C.d, theta=self.theta, stype='iso')
-        elif RT_c == 'turbid_rayleigh':
-            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, ks_h=self.C.ks_h, ks_v=self.C.ks_v, d=self.C.d, theta=self.theta, stype='rayleigh')
-
-        elif RT_c == 'water_cloud':
-            self.rt_c = WaterCloudCanopy(A_hh=self.C.A_hh, B_hh=self.C.B_hh, A_vv=self.C.A_vv, B_vv=self.C.B_vv, V1=self.C.V1, V2=self.C.V2, theta=self.theta)
-        else:
-            assert False, 'Invalid canopy scattering model: ' + RT_c
-
-    def _check(self, RT_s, RT_c):
-        valid_surface = ['Oh92', 'Dubois95', 'WaterCloud']
-        valid_canopy = ['turbid_rayleigh', 'turbid_isotropic', 'water_cloud']
-        assert RT_s in valid_surface, 'ERROR: invalid surface scattering model was chosen!'
-        assert RT_c in valid_canopy, 'ERROR: invalid canopy model: ' + RT_c
-        assert self.theta is not None
 
     def sigma_g_c_g(self):
 
@@ -280,6 +285,7 @@ class Ground(object):
         s_vv = self.rt_c.sigma_vol_back['vv']*np.cos(self.theta)*self.rho_v*self.rho_v*(self.rt_c.t_v*self.rt_c.t_v-self.rt_c.t_v**4.) / (self.C.ke_v + self.C.ke_v)
         s_hh = self.rt_c.sigma_vol_back['hh']*np.cos(self.theta)*self.rho_h*self.rho_h*(self.rt_c.t_h*self.rt_c.t_h-self.rt_c.t_h**4.) / (self.C.ke_h + self.C.ke_h)
         s_hv = self.rt_c.sigma_vol_back['hv']*np.cos(self.theta)*self.rho_h*self.rho_v*(self.rt_c.t_h*self.rt_c.t_v-self.rt_c.t_h**2.*self.rt_c.t_v**2.) / (self.C.ke_h + self.C.ke_v)
+
 
         return {'vv' : s_vv, 'hh' : s_hh, 'hv' : s_hv}
 
@@ -351,7 +357,7 @@ class CanopyHomoRT(object):
         ke_h, ke_v : float
             volume extinction coefficient [Np/m]
         d : float
-            height of canopy layer
+            height of canopy layer [m]
         theta : float, ndarray
             incidence angle [rad]
         """
@@ -368,6 +374,7 @@ class CanopyHomoRT(object):
 
         self.tau_h = self._tau(self.ke_h)
         self.tau_v = self._tau(self.ke_v)
+
         self.t_h = np.exp(-self.tau_h)
         self.t_v = np.exp(-self.tau_v)
 
@@ -383,14 +390,13 @@ class CanopyHomoRT(object):
         assert self.ks_h is not None
         assert self.ks_v is not None
 
-        assert self.ke_h >=0.
-        assert self.ke_v >=0.
-        assert self.ks_h >=0.
-        assert self.ks_v >=0.
+        assert self.ke_h.min() >=0.
+        assert self.ke_v.min() >=0.
+        assert self.ks_h.min() >=0.
+        assert self.ks_v.min() >=0.
 
-
-        assert self.ks_h <= self.ke_h
-        assert self.ks_v <= self.ke_v
+        # assert self.ks_h <= self.ke_h
+        # assert self.ks_v <= self.ke_v
 
     def _set_scat_type(self):
         """ set scatterer type """
@@ -418,10 +424,10 @@ class CanopyHomoRT(object):
         """
         return self.SC.sigma_v_bist()
 
-
-
-
     def _tau(self, k):
+        """
+        Eq. 11.3, Ulaby(2014)
+        """
         # assumption: extinction is isotropic
         return k*self.d/np.cos(self.theta)
 
@@ -450,6 +456,8 @@ class CanopyHomoRT(object):
         s_hh = (1.-self.t_h*self.t_h)*(self.sigma_vol_back['hh']*np.cos(self.theta))/(self.ke_h+self.ke_h)
         s_vv = (1.-self.t_v*self.t_v)*(self.sigma_vol_back['vv']*np.cos(self.theta))/(self.ke_v+self.ke_v)
         s_hv = (1.-self.t_h*self.t_v)*(self.sigma_vol_back['hv']*np.cos(self.theta))/(self.ke_h+self.ke_v)
+        # pdb.set_trace()
+
 
         # this seems o.k. here
 #        a=self.sigma_vol_back['hh']
@@ -506,6 +514,7 @@ class WaterCloudCanopy(object):
         s_hh =  self.A_hh * self.V1 * np.cos(self.theta) * (1 - self._tau(self.B_hh))
         s_vv = self.A_vv * self.V1 * np.cos(self.theta) * (1 - self._tau(self.B_vv))
         s_hv =  self.A_vv * self.V1 * np.cos(self.theta) * (1 - self._tau(self.B_vv))
+
 
         return {'hh' : s_hh, 'vv' : s_vv, 'hv' : s_hv}
 
