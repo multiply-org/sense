@@ -68,9 +68,8 @@ class Oh92(SurfaceScatter):
         ax.set_xlim(0.,70.)
         ax.legend()
         ax.set_xlabel('incidence angle [deg]')
-        ax.set_ylabel('backscatter [dB]')
-
-
+        # ax.set_ylabel('backscatter [dB]')
+        ax.set_ylabel('backscatters coefficient [dB m2/m2]')
 
 
 
