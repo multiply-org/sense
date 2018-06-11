@@ -6,7 +6,7 @@ import matplotlib.dates as mdates
 from matplotlib.dates import MonthLocator
 # import matplotlib.ticker
 import numpy as np
-from sense.canopy import OneLayer, WaterCloudLayer
+from sense.canopy import OneLayer
 from sense.soil import Soil
 from sense import model
 
@@ -111,6 +111,20 @@ omega = 0.005
 # coef[0:35] = 1.10240852
 # coef[35:len(coef)] = 0.3
 
+## Choose models
+#---------------
+# surface = 'Oh92'
+surface = 'Oh04'
+# surface = 'Dubois95'
+# surface = 'WaterCloud'
+canopy = 'turbid_isotropic'
+# canopy = 'turbid_rayleigh'
+# canopy = 'water_cloud'
+
+models = {'surface': surface, 'canopy': canopy}
+
+
+
 
 # Optimisation
 #--------------
@@ -142,29 +156,28 @@ omega = 0.005
 # guess = [0.1, 0.045]
 
 
-def solve_fun(coef):
-
-    # stype = 'turbid_rayleigh'
-    stype='turbid_isotropic'
-    models = {'surface': 'Oh92', 'canopy': stype}
+def solve_fun_SSRT(coef):
 
     # ke = coef * np.sqrt(lai)
     ke = coef * np.sqrt(vwc)
 
+    # initialize surface
+    #--------------------
+    soil = Soil(mv=sm, C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, V2=lai_field.values.flatten(), s=s, clay=clay, sand=sand, f=freq, bulk=bulk)
 
-    # soil = Soil(eps=eps, f=freq, s=s)
-    soil = Soil(mv=sm, f=freq, s=s, clay=clay, sand=sand, bulk=bulk)
-    can = OneLayer(ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke)
+    # initialize canopy
+    #-------------------
+    can = OneLayer(canopy=canopy, ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke, V1=lai_field.values.flatten(), V2=lai_field.values.flatten(), A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv)
 
-    S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
-
+    # run SenSe module
+    #------------------
+    S = model.RTModel(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
     S.sigma0()
 
     return S.__dict__['stot'][pol2][0]
 
 def fun_opt(VALS):
-    # pdb.set_trace()
-    return(np.sum(np.square(solve_fun(VALS[0])-pol_value)))
+    return(np.sum(np.square(solve_fun_SSRT(VALS[0])-pol_value)))
 
 guess = [0.45]
 
@@ -244,34 +257,28 @@ coef = aaa
 # ke = coef * np.sqrt(lai_field.values.flatten())
 ke = coef * np.sqrt(vwc_field.values.flatten())
 
-# Choose models
-#---------------
-# surface = 'Oh92'
-surface = 'WaterCloud'
-# canopy = 'turbid_isotropic'
-# canopy = 'turbid_rayleigh'
-canopy = 'water_cloud'
 
-models = {'surface': surface, 'canopy': canopy}
+
+
+
+
+
+
 
 # initialize surface
 #--------------------
-soil = Soil(mv=sm_field.values.flatten(), C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, V2=lai_field.values.flatten(), s=s, clay=0.3, sand=0.4, f=freq)
-# soil = Soil(mv=sm_field.values.flatten(), f=freq, s=s, clay=clay, sand=sand, bulk=bulk)
+soil = Soil(mv=sm_field.values.flatten(), C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, V2=lai_field.values.flatten(), s=s, clay=0.3, sand=0.4, f=freq, bulk=bulk)
 
 # initialize canopy
 #-------------------
-can = WaterCloudLayer(V1=lai_field.values.flatten(), V2=lai_field.values.flatten(), A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv)
-# can = OneLayer(ke_h=ke, ke_v=ke, d=height_field.values.flatten(), ks_h = omega*ke, ks_v = omega*ke)
+can = OneLayer(canopy=canopy, ke_h=ke, ke_v=ke, d=height_field.values.flatten(), ks_h = omega*ke, ks_v = omega*ke, V1=lai_field.values.flatten(), V2=lai_field.values.flatten(), A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv)
 
 # run SenSe module
 #------------------
-# S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=theta_field.values.flatten(), freq=freq)
-
-S = model.WaterCloud(surface=soil, canopy=can, models=models, theta=theta_field.values.flatten(), freq=freq)
+S = model.RTModel(surface=soil, canopy=can, models=models, theta=theta_field.values.flatten(), freq=freq)
 S.sigma0()
 
-
+pdb.set_trace()
 
 # Scatterplot
 #------------
@@ -284,7 +291,7 @@ plt.plot(10*np.log10(pol_field[field_data[(field,'relativeorbit')]==95]),10*np.l
 plt.plot(10*np.log10(pol_field[field_data[(field,'relativeorbit')]==168]),10*np.log10(S.__dict__['stot'][pol2][0][field_data[(field,'relativeorbit')]==168]), 'gs', label=168)
 plt.legend()
 
-x = np.linspace(-26,-15, 16)
+x = np.linspace(np.min(10*np.log10(pol_field.values.flatten()))-2, np.max(10*np.log10(pol_field.values.flatten()))+2, 16)
 plt.plot(x,x)
 plt.savefig('/media/tweiss/Daten/plots/scatterplot_'+field+'_'+pol+'_'+file_name)
 plt.close()
@@ -341,7 +348,7 @@ months = MonthLocator()
 ax.xaxis.set_major_locator(months)
 ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b %Y"))
 
-ax.set_ylim([-25,-14])
+ax.set_ylim([np.min(10*np.log10(pol_field.values.flatten()))-2, np.max(10*np.log10(pol_field.values.flatten()))+2])
 # ax2.get_yaxis().set_ticks([])
 # ax2.set_ylim([0,8])
 # ax3.set_ylim([0,8])

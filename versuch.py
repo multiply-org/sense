@@ -17,7 +17,7 @@ import numpy as np
 from sense import model
 import matplotlib.pyplot as plt
 from sense.soil import Soil
-from sense.canopy import OneLayer, WaterCloudLayer
+from sense.canopy import OneLayer
 import pdb
 
 
@@ -116,7 +116,7 @@ D_vv = 1.00000000e+01
 soil = Soil(mv=mv, f=freq, s=s, clay=0.3, sand=0.4)
 # soil = Soil(mv=mv, C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, V2=V2, s=s, clay=0.3, sand=0.4, f=freq)
 can = OneLayer(ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke)
-# can = WaterCloudLayer(V1=V1, V2=V2, A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv)
+# can = OneLayer(V1=V1, V2=V2, A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv)
 S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
 # S = model.WaterCloud(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
 S.sigma0()

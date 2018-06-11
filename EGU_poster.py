@@ -29,7 +29,7 @@ from sense.soil import Soil
 from sense.canopy import OneLayer
 import pandas as pd
 import os
-from sense.canopy import OneLayer, WaterCloudLayer
+from sense.canopy import OneLayer
 
 from scipy.optimize import minimize
 
@@ -130,7 +130,7 @@ D_vv = 14.07248098
 # # models = {'surface': 'Oh92', 'canopy': 'water_cloud'}
 # soil = Soil(mv=sm_508.values.flatten(), C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, V2=lai_508.values.flatten(), s=s, clay=0.3, sand=0.4, f=freq)
 # # soil = Soil(mv=sm_508.values.flatten(), f=freq, s=s, clay=0.11, sand=0.11, bulk=1.65)
-# can = WaterCloudLayer(V1=lai_508.values.flatten(), V2=lai_508.values.flatten(), A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv)
+# can = OneLayer(V1=lai_508.values.flatten(), V2=lai_508.values.flatten(), A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv)
 # S_water = model.WaterCloud(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
 # S_water.sigma0()
 

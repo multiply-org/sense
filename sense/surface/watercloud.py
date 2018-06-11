@@ -10,9 +10,9 @@ References
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .scatter import SurfaceScatterWaterCloud
+from .scatter import SurfaceScatter
 
-class WaterCloudSurface(SurfaceScatterWaterCloud):
+class WaterCloudSurface(SurfaceScatter):
     def __init__(self, mv, theta, C_hh, C_vv, D_hh, D_vv):
         """
         Parameters
@@ -26,7 +26,7 @@ class WaterCloudSurface(SurfaceScatterWaterCloud):
         D : float
             empirical parameter (check relation)
         """
-        super(WaterCloudSurface, self).__init__(mv, theta, C_hh, C_vv, D_hh, D_vv)
+        super(WaterCloudSurface, self).__init__(mv=mv, theta=theta, C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv)
 
         # calculate surface component
         self.vv = self._calc_vv()
