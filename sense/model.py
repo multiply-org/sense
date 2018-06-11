@@ -3,7 +3,7 @@ Basic class for scattering modelling
 """
 import pdb
 import numpy as np
-from . surface import Oh92, Dubois95, WaterCloudSurface
+from . surface import Oh92, Oh04, Dubois95, WaterCloudSurface
 from . util import f2lam
 from . scatterer import ScatIso, ScatRayleigh
 from . core import Reflectivity
@@ -51,78 +51,11 @@ class Model(object):
             if k not in ['HH','VV','HV','VH']:
                 assert False, 'Invalid polarization: ' + k
 
-class WaterCloud(Model):
-    def __init__(self, **kwargs):
-        """
-        """
-        super(WaterCloud, self).__init__(**kwargs)
-        self.surface = kwargs.get('surface', None)
-        self.canopy = kwargs.get('canopy', None)
-        self.models = kwargs.get('models', None)
-        self.freq = kwargs.get('freq', None)
-        self.coherent = kwargs.get('coherent', True)  # use coherent simulations as default
-
-        self._check()
-
-    def _check(self):
-        assert self.surface is not None
-        assert self.canopy is not None
-        assert self.models is not None
-        assert self.freq is not None
-
-        for k in ['surface', 'canopy']:
-            assert k in self.models.keys()  # check that all models have been specified
-
-        assert self.freq == self.surface.f, "Different frequencies in model and soil definition"
-            # check that frequencies are the same!
-
-    def _sigma0(self):
-        """
-        basic calculation of Sigma0
-        based on Eq. 11.17 in Ulaby and Long (2014)
-        """
-
-        # ground backscatter = attenuated surface
-        self.G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta, freq=self.freq)
-        self.s0g = self.G.sigma()  # returns dictionary with different components
-
-        # canopy contribution
-        self.s0c = self.G.rt_c.sigma_c()   # returns a dictionary
-
-        # total canopy ground contribution
-        # self.s0cgt = self.G.sigma_c_g(self.coherent)
-
-        # ground-canopy-ground interaction
-        # self.s0gcg = self.G.sigma_g_c_g()
-
-        # combine backscatter values
-        self.stot = {}
-        for k in ['hh', 'vv', 'hv']:
-            self.stot.update({k : self._combine(k)})
-
-    def _combine(self, k):
-        """        assert self.A_hh is not None
-        assert self.B_hh is not None
-        assert self.A_vv is not None
-        assert self.B_vv is not None
-        combine previous calculated backscatter values
-        """
-        if self.s0g[k] is None:
-            return None
-        if self.s0c[k] is None:
-            return None
-
-        # return np.nansum(np.array([self.s0g[k], self.s0c[k]]))
-        return np.array([self.s0g[k]+self.s0c[k]])
-
-
-
-
-class SingleScatRT(Model):
+class RTModel(Model):
     def __init__(self, **kwargs):
         """
         Single scattering model according to Ulaby and Long (2014)
-        Eq. 11.17
+        Eq. 11.17 or Water Cloud Model according to .....
 
         Parameters
         ----------
@@ -133,7 +66,7 @@ class SingleScatRT(Model):
         models : dict
             dictionary with configuration of scattering models
         """
-        super(SingleScatRT, self).__init__(**kwargs)
+        super(RTModel, self).__init__(**kwargs)
         self.surface = kwargs.get('surface', None)
         self.canopy = kwargs.get('canopy', None)
         self.models = kwargs.get('models', None)
@@ -158,6 +91,9 @@ class SingleScatRT(Model):
         """
         basic calculation of Sigma0
         based on Eq. 11.17 in Ulaby and Long (2014)
+
+        or only ground and canopy contribution for water cloud model
+
         """
 
         # ground backscatter = attenuated surface
@@ -167,27 +103,174 @@ class SingleScatRT(Model):
         # canopy contribution
         self.s0c = self.G.rt_c.sigma_c()   # returns a dictionary
 
-        # total canopy ground contribution
-        self.s0cgt = self.G.sigma_c_g(self.coherent)
+        if (self.models['canopy'] == 'turbid_isotropic') or (self.models['canopy'] == 'turbid_rayleigh'):
+            # total canopy ground contribution
+            self.s0cgt = self.G.sigma_c_g(self.coherent)
 
-        # ground-canopy-ground interaction
-        self.s0gcg = self.G.sigma_g_c_g()
+            # ground-canopy-ground interaction
+            self.s0gcg = self.G.sigma_g_c_g()
 
         # combine backscatter values
         self.stot = {}
         for k in ['hh', 'vv', 'hv']:
             self.stot.update({k : self._combine(k)})
 
+
     def _combine(self, k):
         """
-        combine previous calculated backscatter values
+        combine previous calculated backscatter values for SSRT (isotropic or rayleigh) or Water Cloud model
         """
+
         if self.s0g[k] is None:
             return None
         if self.s0c[k] is None:
             return None
         # return np.nansum(np.array([self.s0g[k], self.s0c[k], self.s0gcg[k], self.s0cgt[k]]))
-        return np.array([self.s0g[k] + self.s0c[k] + self.s0gcg[k] + self.s0cgt[k]])
+        if (self.models['canopy'] == 'turbid_isotropic') or (self.models['canopy'] == 'turbid_rayleigh'):
+            return np.array([self.s0g[k] + self.s0c[k] + self.s0gcg[k] + self.s0cgt[k]])
+        elif (self.models['canopy'] == 'water_cloud'):
+            return np.array([self.s0g[k]+self.s0c[k]])
+        else:
+            assert False, 'unknown canopy model!'
+
+
+# class WaterCloud(Model):
+#     def __init__(self, **kwargs):
+#         """
+#         """
+#         super(WaterCloud, self).__init__(**kwargs)
+#         self.surface = kwargs.get('surface', None)
+#         self.canopy = kwargs.get('canopy', None)
+#         self.models = kwargs.get('models', None)
+#         self.freq = kwargs.get('freq', None)
+#         self.coherent = kwargs.get('coherent', True)  # use coherent simulations as default
+
+#         self._check()
+
+#     def _check(self):
+#         assert self.surface is not None
+#         assert self.canopy is not None
+#         assert self.models is not None
+#         assert self.freq is not None
+
+#         for k in ['surface', 'canopy']:
+#             assert k in self.models.keys()  # check that all models have been specified
+
+#         assert self.freq == self.surface.f, "Different frequencies in model and soil definition"
+#             # check that frequencies are the same!
+
+#     def _sigma0(self):
+#         """
+#         basic calculation of Sigma0
+#         based on Eq. 11.17 in Ulaby and Long (2014)
+#         """
+
+#         # ground backscatter = attenuated surface
+#         self.G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta, freq=self.freq)
+#         self.s0g = self.G.sigma()  # returns dictionary with different components
+
+#         # canopy contribution
+#         self.s0c = self.G.rt_c.sigma_c()   # returns a dictionary
+
+#         # total canopy ground contribution
+#         # self.s0cgt = self.G.sigma_c_g(self.coherent)
+
+#         # ground-canopy-ground interaction
+#         # self.s0gcg = self.G.sigma_g_c_g()
+
+#         # combine backscatter values
+#         self.stot = {}
+#         for k in ['hh', 'vv', 'hv']:
+#             self.stot.update({k : self._combine(k)})
+
+#     def _combine(self, k):
+#         """        assert self.A_hh is not None
+#         assert self.B_hh is not None
+#         assert self.A_vv is not None
+#         assert self.B_vv is not None
+#         combine previous calculated backscatter values
+#         """
+#         if self.s0g[k] is None:
+#             return None
+#         if self.s0c[k] is None:
+#             return None
+
+#         # return np.nansum(np.array([self.s0g[k], self.s0c[k]]))
+#         return np.array([self.s0g[k]+self.s0c[k]])
+
+
+
+
+# class SingleScatRT(Model):
+#     def __init__(self, **kwargs):
+#         """
+#         Single scattering model according to Ulaby and Long (2014)
+#         Eq. 11.17
+
+#         Parameters
+#         ----------
+#         surface : Surface description
+#             object describing the surface
+#         canopy : Canopy description
+#             object describing the canopy
+#         models : dict
+#             dictionary with configuration of scattering models
+#         """
+#         super(SingleScatRT, self).__init__(**kwargs)
+#         self.surface = kwargs.get('surface', None)
+#         self.canopy = kwargs.get('canopy', None)
+#         self.models = kwargs.get('models', None)
+#         self.freq = kwargs.get('freq', None)
+#         self.coherent = kwargs.get('coherent', True)  # use coherent simulations as default
+
+#         self._check()
+
+#     def _check(self):
+#         assert self.surface is not None
+#         assert self.canopy is not None
+#         assert self.models is not None
+#         assert self.freq is not None
+
+#         for k in ['surface', 'canopy']:
+#             assert k in self.models.keys()  # check that all models have been specified
+
+#         assert self.freq == self.surface.f, "Different frequencies in model and soil definition"
+#             # check that frequencies are the same!
+
+#     def _sigma0(self):
+#         """
+#         basic calculation of Sigma0
+#         based on Eq. 11.17 in Ulaby and Long (2014)
+#         """
+
+#         # ground backscatter = attenuated surface
+#         self.G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta, freq=self.freq)
+#         self.s0g = self.G.sigma()  # returns dictionary with different components
+
+#         # canopy contribution
+#         self.s0c = self.G.rt_c.sigma_c()   # returns a dictionary
+
+#         # total canopy ground contribution
+#         self.s0cgt = self.G.sigma_c_g(self.coherent)
+
+#         # ground-canopy-ground interaction
+#         self.s0gcg = self.G.sigma_g_c_g()
+
+#         # combine backscatter values
+#         self.stot = {}
+#         for k in ['hh', 'vv', 'hv']:
+#             self.stot.update({k : self._combine(k)})
+
+#     def _combine(self, k):
+#         """
+#         combine previous calculated backscatter values
+#         """
+#         if self.s0g[k] is None:
+#             return None
+#         if self.s0c[k] is None:
+#             return None
+#         # return np.nansum(np.array([self.s0g[k], self.s0c[k], self.s0gcg[k], self.s0cgt[k]]))
+#         return np.array([self.s0g[k] + self.s0c[k] + self.s0gcg[k] + self.s0cgt[k]])
 
 class Ground(object):
     """
@@ -226,7 +309,7 @@ class Ground(object):
         self._calc_rho()
 
     def _check(self, RT_s, RT_c):
-        valid_surface = ['Oh92', 'Dubois95', 'WaterCloud']
+        valid_surface = ['Oh92', 'Oh04', 'Dubois95', 'WaterCloud']
         valid_canopy = ['turbid_rayleigh', 'turbid_isotropic', 'water_cloud']
         assert RT_s in valid_surface, 'ERROR: invalid surface scattering model was chosen!'
         assert RT_c in valid_canopy, 'ERROR: invalid canopy model: ' + RT_c
@@ -235,6 +318,8 @@ class Ground(object):
         # set surface model
         if RT_s == 'Oh92':
             self.rt_s = Oh92(self.S.eps, self.S.ks, self.theta)
+        elif RT_s == 'Oh04':
+            self.rt_s = Oh04(self.S.mv, self.S.ks, self.theta)
         elif RT_s == 'Dubois95':
             self.rt_s = Dubois95(self.S.eps, self.S.ks, self.theta, lam=f2lam(self.freq))
         elif RT_s == 'WaterCloud':
