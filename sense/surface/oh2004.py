@@ -12,8 +12,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from . scatter import SurfaceScatter
-from .. core import Fresnel0
-from .. core import Reflectivity
 
 class Oh04(SurfaceScatter):
     def __init__(self, mv, ks, theta):
