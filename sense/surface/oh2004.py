@@ -5,7 +5,7 @@ in Ulaby et al (2014), chapter 10.5
 
 References
 ----------
-Oh et al. (2004) 
+Oh et al. (2004): Quantitative retrieval of soil moisture content and surface roughness from multipolarized radar observations of bare soil surface. IEEE TGRS 42(3). 596-601.
 """
 
 import numpy as np
@@ -16,45 +16,39 @@ from .. core import Fresnel0
 from .. core import Reflectivity
 
 class Oh04(SurfaceScatter):
-    def __init__(self, eps, ks, theta):
+    def __init__(self, mv, ks, theta):
         """
         Parameters
         ----------
-        eps : complex
-            relative dielectric permitivity
+        mv : float, ndarray
+            volumetric soil moisture m3/m3
         ks : float
             product of wavenumber and rms height
             be aware that both need to have the same units
         theta : float, ndarray
             incidence angle [rad]
         """
-        super(Oh04, self).__init__(eps, ks, theta)
+        super(Oh04, self).__init__(mv=mv, ks=ks, theta=theta)
 
         # calculate p and q
-        self.G0 = Fresnel0(self.eps)  # nadir fresnel reflectivity
-        self.G = Reflectivity(self.eps, self.theta)
         self._calc_p()
         self._calc_q()
 
         # calculate backascatter
-        self.vv = self._calc_vv()
-        self.hh = self.p * self.vv
-        self.hv = self.q * self.vv
-
-
-        assert False, 'To be still implemented!'
+        self.hv = self._calc_vh()
+        # difference between hv and vh?
+        self.vv = self.hv / self.q
+        self.hh = self.hv / self.q * self.p
 
     def _calc_p(self):
-        a = 1./(3.*self.G0.x)
-        self.p = (1.- (2.*self.theta/np.pi)**a * np.exp(-self.ks)     )**2.
+        self.p = 1 - (2.*self.theta/np.pi)**(0.35*self.mv**(-0.65)) * np.exp(-0.4 * self.ks**1.4)
 
     def _calc_q(self):
-        self.q = 0.23*(self.G0.x)**0.5 * (1.-np.exp(-self.ks))
+        self.q = 0.095 * (0.13 + np.sin(1.5*self.theta))**1.4 * (1-np.exp(-1.3 * self.ks**0.9))
 
-    def _calc_vv(self):
-
-        a = 0.7*(1.-np.exp(-0.65*self.ks**1.8))
-        b = np.cos(self.theta)**3. * (self.G.v+self.G.h) / np.sqrt(self.p) 
+    def _calc_vh(self):
+        a = 0.11 * self.mv**0.7 * np.cos(self.theta)**2.2
+        b = 1 - np.exp(-0.32 * self.ks**1.8)
         return a*b
 
     def plot(self):
