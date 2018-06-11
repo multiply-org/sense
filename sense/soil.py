@@ -29,6 +29,9 @@ class Soil(object):
             optional fractional clay content
         sand : float
             optional fraction sand content
+
+
+        empirical soil parameters water cloud model missing!!!!
         """
 
         self.eps = kwargs.get('eps', None)
@@ -45,6 +48,7 @@ class Soil(object):
             self._convert_eps2mv()
         if self.mv is not None:
             self._convert_mv2eps()
+
 
         # wavenumber
         self.k = 2.*np.pi / f2lam(self.f)  # note that wavenumber is in meter and NOT in cm!
