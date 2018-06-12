@@ -24,7 +24,7 @@ class Dubois95(SurfaceScatter):
 
     def _calc_sigma(self):
         lam = self.lam*100.  # from m in cm
-        ks = self.ks/100  # This line reproduces ULABY value. s is in cm, here!
+        ks = self.ks  # ks has no unity (s [cm or m], k [1/cm or 1/m])
         return self._vv(lam, ks), self._hh(lam, ks)
 
     def _hh(self, lam, ks):
