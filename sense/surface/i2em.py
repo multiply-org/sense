@@ -14,10 +14,10 @@ from .. core import Reflectivity
 import math
 
 from scipy.integrate import dblquad
-
+from past.builtins import xrange
 
 from numba import jit
-
+import pdb
 
 @jit(cache=True,nopython=True)
 def _calc_roughness_spectra_matrix(nx, ny, kl2, nspec, s, acf_type_id):
@@ -26,7 +26,6 @@ def _calc_roughness_spectra_matrix(nx, ny, kl2, nspec, s, acf_type_id):
     needs to return a matrix for further use
     in crosspol calculations
     """
-
     if acf_type_id == 1:  # gauss
         wm = _calc_wm_matrix_gauss(nx, ny, nspec, kl2, s)
         wn = _calc_wn_matrix_gauss(nx, ny, nspec, kl2, s)
@@ -82,7 +81,7 @@ class I2EM(SurfaceScatter):
         self._kl2 = (self.k*self.l)**2.
         self.acf_type = kwargs.get('acf_type', 'gauss')
         super(I2EM, self).__init__(eps, k*sig, theta, kl=k*l)
-        
+
         # assume backscatter geometry
         self.phi = 0.
         self.thetas = self.theta*1.
@@ -112,19 +111,20 @@ class I2EM(SurfaceScatter):
             error = 1.E8
             while error > 1.0E-8:
                 nspec += 1
-                error = (self._ks2*(2.*self._cs)**2.)**nspec / math.factorial(nspec)  
+                error = (self._ks2*(2.*self._cs)**2.)**nspec / math.factorial(nspec)
             self.n_spec = nspec
         else:
             self.n_spec = 15
 
         I = np.arange(self.n_spec)
-        self._fac = map(math.factorial, I+1)  # factorial(n)
+        # self._fac = map(math.factorial, I+1)  # factorial(n)
+        self._fac = [math.factorial(x) for x in I+1]
 
 
 
     def _estimate_itterations(self):
         """
-        estimate the number of necessary itterations for 
+        estimate the number of necessary itterations for
         the integral calculations
         """
 
@@ -176,9 +176,10 @@ class I2EM(SurfaceScatter):
 
         # calculate the integral
         idx = np.arange(self.niter)+1
-        self.fac = map(math.factorial, idx)  # factorial for all N itterations; this is stored as it is needed multipole times
+        # self.fac = map(math.factorial, idx)  # factorial for all N itterations; this is stored as it is needed multipole times
+        self.fac = [math.factorial(x) for x in idx]
 
-        self.wn, self.rss = self.calc_roughness_spectrum(acf_type=self.acf_type) 
+        self.wn, self.rss = self.calc_roughness_spectrum(acf_type=self.acf_type)
         Ivv, Ihh = self._calc_Ipp()
         Ivv_abs = np.abs(Ivv)
         Ihh_abs = np.abs(Ihh)
@@ -219,6 +220,7 @@ class I2EM(SurfaceScatter):
         when using python, x and y are reversed, however
         this does not matter unless the bounds are specified in the right order
         """
+
         ans, err = dblquad(self._xpol_integralfunc, 0.1, 1., lambda x : 0., lambda x : 1., args=[[rvh,self.eps, self._ks2, self._cs2, self.rss, self._cs, self._fac, self._kl2, self._s, self._get_acf_id()]])
         return ans
 
@@ -282,13 +284,12 @@ class I2EM(SurfaceScatter):
         sha = 1./(1. + fsh)
 
         # calculate expressions for the surface spectra
-        
-        wn, wm = _calc_roughness_spectra_matrix(rx, ry, kl2, nspec, s, acf_type_id) 
+        wn, wm = _calc_roughness_spectra_matrix(rx, ry, kl2, nspec, s, acf_type_id)
 
         vhmnsum = 0.
         for i in xrange(nspec):
             for j in xrange(nspec):
-                vhmnsum += wn[i] * wm[j] * (ks2*cs2)**((i+1)+(j+1))/fac[i]/fac[j] 
+                vhmnsum += wn[i] * wm[j] * (ks2*cs2)**((i+1)+(j+1))/fac[i]/fac[j]
 
         # compute VH scattering coefficient
         acc = np.exp(-2.* ks2 *cs2) /(16. * np.pi)
@@ -339,7 +340,7 @@ class I2EM(SurfaceScatter):
             S = ExponentialSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi,phis=self.phis, freq=self.freq, sig=self.sig)
         else:
             assert False, 'Invalid surface roughness spectrum: ' + str(acf_type)
-        
+
         return S.wn()  # returns wn as an array with length NITER
 
     def _calc_Ipp(self):
@@ -353,7 +354,7 @@ class I2EM(SurfaceScatter):
         R = Reflectivity(self.eps, self.theta)
         Rvi = R.rho_v
         Rhi = R.rho_h
-        
+
         Fvvupi, Fhhupi = self.Fppupdn( 1,1,Rvi,Rhi)
         Fvvups, Fhhups = self.Fppupdn( 1,2,Rvi,Rhi)
         Fvvdni, Fhhdni = self.Fppupdn(-1,1,Rvi,Rhi)
@@ -433,7 +434,7 @@ class I2EM(SurfaceScatter):
 
         vv =  (1.+Rvi) *( -(1-Rvi) *c11 /q + (1.+Rvi)       *c12 / qt)
         vv += (1.-Rvi) *(  (1-Rvi) *c21 /q - (1.+Rvi)       *c22 / qt)
-        vv += (1.+Rvi) *(  (1-Rvi) *c31 /q - (1.+Rvi)       *c32 /self.eps /qt) 
+        vv += (1.+Rvi) *(  (1-Rvi) *c31 /q - (1.+Rvi)       *c32 /self.eps /qt)
         vv += (1.-Rvi) *(  (1+Rvi) *c41 /q - self.eps*(1. - Rvi)  *c42 / qt)
         vv += (1.+Rvi) *(  (1+Rvi) *c51 /q - (1.-Rvi)       *c52 / qt)
 
@@ -455,6 +456,7 @@ class I2EM(SurfaceScatter):
         Ft = 8. * Rv0**2. + self._ss * (self._cs + np.sqrt(self.eps - self._s2))/(self._cs * np.sqrt(self.eps - self._s2))
 
         idx = np.arange(self.niter)+1
+        # pdb.set_trace()
         a0 = (self.ks*self._cs)**(2.*idx)/self.fac
         a1 = np.sum(a0*self.wn)
         b1 = np.sum(a0 * (np.abs(Ft/2. + 2.**(idx+1) *Rv0/self._cs *np.exp(-(self.ks*self._cs)**2.)))**2. * self.wn)
@@ -518,7 +520,7 @@ class Roughness(object):
         self.phi = kwargs.get('phi', None)
         self.phis = kwargs.get('phis', None)
         self.freq = kwargs.get('freq', None)
-        
+
         self._check()
         self.n = np.arange(self.niter)+1
         self._init()
@@ -537,14 +539,14 @@ class Roughness(object):
         self.k = 2.*np.pi / lam
         self._kl = self.k*self.l
         self._kl2 = self._kl**2.
-        
+
         # todo whereis this defined ???
         self.wvnb = self.k * np.sqrt( (ss *cfs - self._s *cf)**2. + (ss * sfs - self._s * sf)**2. )
 
     def _check(self):
         assert self.niter is not None, 'ERROR: niter was not set!'
         assert self.l is not None
-        assert self.sig is not None 
+        assert self.sig is not None
         assert self.theta is not None
         assert self.thetas is not None
         assert self.phi is not None
@@ -557,20 +559,20 @@ class Roughness(object):
 def _calc_wn_matrix_gauss(rx, ry, nspec, kl2, s):
     wn = np.zeros(nspec)
     for i in xrange(nspec):
-        wn[i] = 0.5 *kl2/(i+1.) * np.exp(-kl2*((rx-s)**2. + ry**2.)/(4.*(i+1))) 
+        wn[i] = 0.5 *kl2/(i+1.) * np.exp(-kl2*((rx-s)**2. + ry**2.)/(4.*(i+1)))
     return wn
 
 @jit(cache=False, nopython=True)
 def _calc_wm_matrix_gauss(rx, ry, nspec, kl2, s):
     wm = np.zeros(nspec)
     for i in xrange(nspec):
-        wm[i] = 0.5 *kl2/(i+1.) * np.exp(-kl2*((rx+s)**2. + ry**2.)/(4.*(i+1))) 
+        wm[i] = 0.5 *kl2/(i+1.) * np.exp(-kl2*((rx+s)**2. + ry**2.)/(4.*(i+1)))
     return wm
 
 class GaussianSpectrum(Roughness):
     def __init__(self, **kwargs):
         super(GaussianSpectrum, self).__init__(**kwargs)
-    
+
     def wn(self):
         # Fung (1994), Eq. 2B.4; except for wvnb
         n = self.n
@@ -613,7 +615,7 @@ class ExponentialSpectrum(Roughness):
         wn= self.l**2. / n**2. * (1.+(self.wvnb*self.l/n)**2.)**(-1.5)
         rss = self.sig/self.l
         return wn, rss
-    
+
     def calc_wn_matrix(self, rx, ry, nspec):
         #for i in xrange(nspec):
         # n = i+1

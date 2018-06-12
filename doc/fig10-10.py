@@ -1,5 +1,5 @@
 """
-comparison with figure 10-10 
+comparison with figure 10-10
 in Ulaby 2014
 
 - cross pol for Gaussian seems rather low
@@ -59,10 +59,10 @@ hv2=[]
 xpol = True
 auto=False
 for t in theta:
-    print t
+    print(t)
     I1 = I2EM(f, eps, s, l, t, acf_type='gauss', xpol=xpol, auto=auto)
     I2 = I2EM(f, eps, s, l, t, acf_type='exp15', xpol=xpol, auto=auto)
-    print I1.ks, I1.kl
+    print(I1.ks, I1.kl)
     hh1.append(I1.hh)
     hh2.append(I2.hh)
     vv1.append(I1.vv)
@@ -89,6 +89,7 @@ ax.plot(theta_deg, db(hv1), color='blue', label='hv', linestyle='-.')
 
 ax.grid()
 ax.set_xlim(0.,70.)
-ax.set_ylim(-100.,30.)
-print 'Elapsed time: ', time.time()-start
+ax.set_ylim(-100.,20.)
+ax.set_yticks(np.arange(-100, 30, 10))
+print('Elapsed time [s]: ', time.time()-start)
 plt.show()
