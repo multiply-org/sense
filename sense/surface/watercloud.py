@@ -34,10 +34,10 @@ class WaterCloudSurface(SurfaceScatter):
         self.hv = None
 
     def _calc_vv(self):
-        return ((self.C_vv + self.D_vv * self.mv))
+        return 10.**(((self.C_vv + self.D_vv * self.mv))/10)
 
     def _calc_hh(self):
-        return ((self.C_hh + self.D_hh * self.mv))
+        return 10.**(((self.C_hh + self.D_hh * self.mv))/10)
 
     def plot(self):
         f = plt.figure()
