@@ -54,10 +54,10 @@ for s in S:
     s_vv_o.append(O.vv)
     s_hh_o.append(O.hh)
 
-    # # IEM
-    # I = I2EM(f, eps, s, l, theta, acf_type=acf_type)
-    # s_vv_i.append(I.vv)
-    # s_hh_i.append(I.hh)
+    # IEM
+    I = I2EM(f, eps, s, l, theta, acf_type=acf_type, xpol=False)
+    s_vv_i.append(I.vv)
+    s_hh_i.append(I.hh)
 
     KS.append(ks)
 
@@ -78,7 +78,7 @@ ax2 = f.add_subplot(122)
 
 ax1.plot(KS, s_vv_d, color='red', label='SMART, Dubois95')
 ax1.plot(KS, s_vv_o, color='blue', label='PRISM1, Oh92')
-# ax1.plot(KS, s_vv_i, color='green', label='I2EM')
+ax1.plot(KS, s_vv_i, color='green', label='I2EM')
 ax1.grid()
 ax1.legend()
 ax1.set_xlim(0.06,0.82)
@@ -88,7 +88,7 @@ ax1.set_ylabel('backscattering coefficient VV [dB]')
 
 ax2.plot(KS, s_hh_d, color='red', label='SMART, Dubois95')
 ax2.plot(KS, s_hh_o, color='blue', label='PRISM1, Oh92')
-# ax2.plot(KS, s_hh_i, color='green', label='I2EM')
+ax2.plot(KS, s_hh_i, color='green', label='I2EM')
 ax2.grid()
 ax2.legend()
 ax2.set_xlim(0.06,0.82)
