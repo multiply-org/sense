@@ -17,7 +17,6 @@ from scipy.integrate import dblquad
 from past.builtins import xrange
 
 from numba import jit
-import pdb
 
 @jit(cache=True,nopython=True)
 def _calc_roughness_spectra_matrix(nx, ny, kl2, nspec, s, acf_type_id):
@@ -220,7 +219,6 @@ class I2EM(SurfaceScatter):
         when using python, x and y are reversed, however
         this does not matter unless the bounds are specified in the right order
         """
-
         ans, err = dblquad(self._xpol_integralfunc, 0.1, 1., lambda x : 0., lambda x : 1., args=[[rvh,self.eps, self._ks2, self._cs2, self.rss, self._cs, self._fac, self._kl2, self._s, self._get_acf_id()]])
         return ans
 
@@ -456,7 +454,6 @@ class I2EM(SurfaceScatter):
         Ft = 8. * Rv0**2. + self._ss * (self._cs + np.sqrt(self.eps - self._s2))/(self._cs * np.sqrt(self.eps - self._s2))
 
         idx = np.arange(self.niter)+1
-        # pdb.set_trace()
         a0 = (self.ks*self._cs)**(2.*idx)/self.fac
         a1 = np.sum(a0*self.wn)
         b1 = np.sum(a0 * (np.abs(Ft/2. + 2.**(idx+1) *Rv0/self._cs *np.exp(-(self.ks*self._cs)**2.)))**2. * self.wn)
