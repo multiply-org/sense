@@ -19,6 +19,8 @@ class EpsModel(object):
             volumetric soil moisture content [cm**3/cm**3] = [g/cm**3]
         freq : float
             frequency [GHz]
+        t : float
+            temperature [°C]
         """
 
         self.clay = kwargs.get('clay', None)
@@ -29,6 +31,8 @@ class EpsModel(object):
         self.mv = kwargs.get('mv', None)
 
         self.f = kwargs.get('freq', None)
+
+        self.t = kwargs.get('temp', 23.)
 
         self._check()
 

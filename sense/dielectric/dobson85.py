@@ -11,32 +11,57 @@ class Dobson85(EpsModel):
     def __init__(self, **kwargs):
         super(Dobson85, self).__init__(**kwargs)
 
+        self.debye = kwargs.get('debye', False)
+        self.single_debye = kwargs.get('single_debye', False)
         self._init_model_parameters()
         self.ew = self._calc_ew()
         self.eps = self._calc_eps()
 
-    def _calc_ew(self, debye=False):
+    def _calc_ew(self):
         """
         calculate dielectric permittivity of free water
         using either the Debye model or a more simplistic approach
         """
-        if debye:
+        if self.debye:
+            # single Debye dielectric model for pure water. Eqs. 4.14 or Debye model with conductivity term for e2. Eqs. 4.67
             return self._debye()
         else:
+            # default setting
             # simplistic approach using Eq. 4.69
             return self._simple_ew()
 
     def _simple_ew(self):
-        """ eq. 4.69 """
+        """
+        eq. 4.69
+        simplistic approach with T=23°C, bulk density = 1.7 g/cm3
+        """
         f0 = 18.64   # relaxation frequency [GHz]
         hlp = self.f/f0
         e1 = 4.9 + (74.1)/(1.+hlp**2.)
-        e2 =(74.1*hlp)/(1.+hlp**2.) + 6.46 * self.sigma/self.f 
+        e2 =(74.1*hlp)/(1.+hlp**2.) + 6.46 * self.sigma/self.f
         return e1 + 1.j * e2
 
     def _debye(self):
-        assert False
+        """
+        Debye model
+        1) single Debye dielectric model for pure water. Eqs. 4.14
+        2) (default) Debye model with conductivity term for e2. Eqs. 4.67
+        """
 
+
+        f = self.f *10**9
+        ew_inf = 4.9 # determined by Lane and Saxton 1952 (E.4.15)
+        ew_0 = 88.045 - 0.4147 * self.t + 6.295*10**-4 * self.t**2 + 1.075*10**-5 * self.t**3
+        tau_w = (1.1109*10**-10 - 3.824*10**-12*self.t + 6.938*10**-14*self.t**2 - 5.096*10**-16*self.t**3)/2./np.pi
+        e1 = ew_inf +(ew_0-ew_inf)/(1 + (2*np.pi*f*tau_w)**2)
+
+        if self.single_debye:
+            # single Debye dielectric model for pure water. Eqs. 4.14
+            e2 = 2*np.pi*f*tau_w * (ew_0-ew_inf) / (1 + (2*np.pi*f*tau_w)**2)
+        else:
+            # Debye model with conductivity term for e2. Eqs. 4.67
+            e2 = 2*np.pi*f*tau_w * (ew_0-ew_inf) / (1 + (2*np.pi*f*tau_w)**2) + (2.65-self.bulk)/2.65/self.mv * self.sigma/(2*np.pi*8.854*10**-12*f)
+        return e1 + 1.j *e2
 
     def _init_model_parameters(self):
         """
@@ -56,4 +81,4 @@ class Dobson85(EpsModel):
         e1 = (1.+0.66*self.bulk+self.mv**self.beta1*np.real(self.ew)**self.alpha - self.mv)**(1./self.alpha)
         e2 = np.imag(self.ew)*self.mv**self.beta2
         return e1 + 1.j*e2
-        
+
