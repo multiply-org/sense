@@ -1,6 +1,9 @@
 """
 compare results of implemented models
 against Fig 10.42 from Ulaby (2014)
+
+SMART (Dubois95) and PRISM-1 (Oh92) look really good!
+I2EM results don't match. Problem settings: auto correlation length l ?, acf_type?
 """
 
 import sys
