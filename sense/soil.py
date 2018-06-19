@@ -42,6 +42,7 @@ class Soil(object):
         self.acl = kwargs.get('acl', None)
         self.clay = kwargs.get('clay', None)
         self.sand = kwargs.get('sand', None)
+        self.debye = kwargs.get('debye', None)
         self.dc_model = kwargs.get('dc_model', 'Dobson85')
         self._check()
         if self.eps is not None:
@@ -76,7 +77,7 @@ class Soil(object):
             self.eps = None
             print('WARNING: Permittivity can not be calculated due to missing soil texture!')
         if self.dc_model == 'Dobson85':
-            DC = Dobson85(clay=self.clay, sand=self.sand, mv=self.mv, freq=self.f)
+            DC = Dobson85(clay=self.clay, sand=self.sand, mv=self.mv, freq=self.f, debye=self.debye)
         else:
             assert False, 'Invalid DC model! ' + self.dc_model
 
