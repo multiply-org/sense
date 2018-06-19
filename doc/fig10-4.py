@@ -1,6 +1,10 @@
 """
 soil dielectric model behavior
 comparison with figure 10-4 in Ulaby 2014
+
+Fig 10-4 are measurement data not model data!
+
+Shape of the graphs looks fine
 """
 
 import numpy as np

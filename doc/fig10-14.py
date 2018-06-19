@@ -27,7 +27,7 @@ plt.close('all')
 
 theta_deg = np.linspace(0.,70., 4)
 theta = np.deg2rad(theta_deg)
-
+theta = np.deg2rad(30)
 f = plt.figure()
 ax1 = f.add_subplot(121)
 ax2 = f.add_subplot(122)
@@ -44,7 +44,7 @@ vv1=[]
 vv2=[]
 hv1=[]
 hv2=[]
-xpol = False
+xpol = True
 auto=False
 ks = []
 
@@ -52,10 +52,12 @@ theta = np.deg2rad(30.)
 
 
 S = np.linspace(0.001,0.1,4)
+s=0.01
+F = np.linspace(1., 18., 20)
 
-
-for s in S:
-    I1 = I2EM(f, 4.7-0.6j, s, l, theta, acf_type='gauss', xpol=xpol, auto=auto)
+for f in F:
+    # I1 = I2EM(f, 4.7-0.6j, s, l, theta, acf_type='gauss', xpol=xpol, auto=auto)
+    I1 = I2EM(f, 21-3.3j, s, l, theta, acf_type='exp15', xpol=xpol, auto=auto)
     hh1.append(I1.hh)
     vv1.append(I1.vv)
     ks.append(I1.ks)

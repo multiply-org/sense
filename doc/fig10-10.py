@@ -61,21 +61,21 @@ start = time.time()
 plt.close('all')
 
 
-theta_deg = np.linspace(0.,70., 40)
+theta_deg = np.linspace(0.,70., 71)
 theta = np.deg2rad(theta_deg)
 
 f = plt.figure()
 ax = f.add_subplot(111)
 
 
-eps = 11.3+1.5j
+eps = 11.3-1.5j
 f = 3.
 
 s = 1./100.
 l = 10./100.
 
-eps = 11.3
-theta=np.deg2rad(30)
+# eps = 11.3
+# theta=np.deg2rad(30)
 # xpol = True
 # auto=False
 # I1 = I2EM(f, eps, s, l, theta, acf_type='gauss', xpol=xpol, auto=auto)
@@ -86,9 +86,9 @@ theta=np.deg2rad(30)
 # xpol = True
 # auto=False
 
-# # I1 = I2EM(f, eps, s, l, t, acf_type='exp15', xpol=xpol, auto=auto)
-# # 10*np.log10(I1._i2em_bistatic())
-# # pdb.set_trace()
+# I1 = I2EM(f, eps, s, l, t, acf_type='exp15', xpol=xpol, auto=auto)
+# 10*np.log10(I1._i2em_bistatic())
+# pdb.set_trace()
 
 # hh1=[]
 # hh2=[]
@@ -167,18 +167,19 @@ vv2 = np.array(vv2)
 hv1 = np.array(hv1)
 hv2 = np.array(hv2)
 
-ax.plot(theta_deg, db(hh2), color='red', label='hh')
+# ax.plot(theta_deg, db(hh2), color='red', label='hh')
 ax.plot(theta_deg, db(hh1), color='blue', label='hh')
 
-ax.plot(theta_deg, db(vv2), color='red', label='vv', linestyle='--')
+# ax.plot(theta_deg, db(vv2), color='red', label='vv', linestyle='--')
 ax.plot(theta_deg, db(vv1), color='blue', label='vv', linestyle='--')
 
-ax.plot(theta_deg, db(hv2), color='red', label='hv', linestyle='-.')
+# ax.plot(theta_deg, db(hv2), color='red', label='hv', linestyle='-.')
 ax.plot(theta_deg, db(hv1), color='blue', label='hv', linestyle='-.')
-
+pdb.set_trace()
 ax.grid()
 ax.set_xlim(0.,70.)
 ax.set_ylim(-100.,15.)
-ax.set_yticks(np.arange(-100, 20, 5))
+ax.set_yticks(np.arange(-90, 20, 10))
 print('Elapsed time [s]: ', time.time()-start)
 plt.show()
+pdb.set_trace()

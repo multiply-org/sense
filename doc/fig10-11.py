@@ -1,5 +1,5 @@
 """
-comparison with figure 10-11 
+comparison with figure 10-11
 in Ulaby 2014
 
 for copol this works pretty good.
@@ -51,13 +51,13 @@ hv1=[]
 hv2=[]
 for t in theta:
     I1 = I2EM(f, eps, s1, l, t, acf_type=acf_type, xpol=True)
-    I2 = I2EM(f, eps, s2, l, t, acf_type=acf_type, xpol=True)
+    I2 = I2EM(f, eps, s2, l, t, acf_type=acf_type, xpol=False)
     hh1.append(I1.hh)
     hh2.append(I2.hh)
     vv1.append(I1.vv)
     vv2.append(I2.vv)
-    #hv1.append(I1.hv)
-    #hv2.append(I2.hv)
+    hv1.append(I1.hv)
+    # hv2.append(I2.hv)
 
 hh1 = np.array(hh1)
 hh2 = np.array(hh2)
@@ -74,11 +74,11 @@ ax.plot(theta_deg, db(hh1), color='blue', label='hh')
 ax.plot(theta_deg, db(vv2), color='red', label='vv', linestyle='--')
 ax.plot(theta_deg, db(vv1), color='blue', label='vv', linestyle='--')
 
-#ax.plot(theta_deg, db(hv2), color='red', label='hv', linestyle='.')
-#ax.plot(theta_deg, db(hv1), color='blue', label='hv', linestyle='.')
+# ax.plot(theta_deg, db(hv2), color='red', label='hv', linestyle='-.')
+ax.plot(theta_deg, db(hv1), color='blue', label='hv', linestyle='-.')
 
 ax.grid()
 ax.set_xlim(0.,70.)
-ax.set_ylim(-50.,30.)
+ax.set_ylim(-60.,10.)
 
 plt.show()
