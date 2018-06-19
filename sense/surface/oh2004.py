@@ -5,7 +5,7 @@ in Ulaby et al (2014), chapter 10.5
 
 References
 ----------
-Oh et al. (2004): Quantitative retrieval of soil moisture content and surface roughness from multipolarized radar observations of bare soil surface. IEEE TGRS 42(3). 596-601.
+Oh (2004): Quantitative retrieval of soil moisture content and surface roughness from multipolarized radar observations of bare soil surface. IEEE TGRS 42(3). 596-601.
 """
 
 import numpy as np
