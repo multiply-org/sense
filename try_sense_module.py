@@ -113,10 +113,10 @@ omega = 0.005
 
 ## Choose models
 #---------------
-# surface = 'Oh92'
+surface = 'Oh92'
 surface = 'Oh04'
-# surface = 'Dubois95'
-# surface = 'WaterCloud'
+surface = 'Dubois95'
+surface = 'WaterCloud'
 canopy = 'turbid_isotropic'
 # canopy = 'turbid_rayleigh'
 # canopy = 'water_cloud'
@@ -182,9 +182,30 @@ def fun_opt(VALS):
 guess = [0.45]
 
 
+# def solve_fun_surfacewatercloud(coef, C_vv, D_vv):
 
+#     # ke = coef * np.sqrt(lai)
+#     ke = coef * np.sqrt(vwc)
 
+#     # initialize surface
+#     #--------------------
+#     soil = Soil(mv=sm, C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, V2=lai_field.values.flatten(), s=s, clay=clay, sand=sand, f=freq, bulk=bulk)
 
+#     # initialize canopy
+#     #-------------------
+#     can = OneLayer(canopy=canopy, ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke, V1=lai_field.values.flatten(), V2=lai_field.values.flatten(), A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv)
+
+#     # run SenSe module
+#     #------------------
+#     S = model.RTModel(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
+#     S.sigma0()
+
+#     return S.__dict__['stot'][pol2][0]
+
+# def fun_opt(VALS):
+#     return(np.sum(np.square(solve_fun_surfacewatercloud(VALS[0],VALS[1],VALS[2])-pol_value)))
+
+# guess = [0.45, -13., 14.]
 
 
 
@@ -209,6 +230,7 @@ d_old = height_field.values.flatten()
 
 aaa = []
 bbb = []
+ccc = []
 
 n = 3
 for i in range(len(lai_508_old)-n+1):
@@ -222,9 +244,11 @@ for i in range(len(lai_508_old)-n+1):
     d = d_old[i:i+n]
     # res = minimize(fun_opt,guess,bounds=[(0.0001,200.),(0.0001,200.)], method='L-BFGS-B')
     res = minimize(fun_opt,guess,bounds=[(0.001,200.)])
+    # res = minimize(fun_opt,guess,bounds=[(0.001,200.),(-100.,200.),(-100.,200.)])
     fun_opt(res.x)
     aaa.append(res.x[0])
     # bbb.append(res.x[1])
+    # ccc.append(res.x[2])
 
 n = 1
 field_data = field_data.drop(field_data.index[-n:])
@@ -259,7 +283,8 @@ ke = coef * np.sqrt(vwc_field.values.flatten())
 
 
 
-
+# C_vv = bbb
+# D_vv = ccc
 
 
 
@@ -267,7 +292,7 @@ ke = coef * np.sqrt(vwc_field.values.flatten())
 
 # initialize surface
 #--------------------
-soil = Soil(mv=sm_field.values.flatten(), C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, V2=lai_field.values.flatten(), s=s, clay=0.3, sand=0.4, f=freq, bulk=bulk)
+soil = Soil(mv=sm_field.values.flatten(), C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, V2=lai_field.values.flatten(), s=s, clay=clay, sand=sand, f=freq, bulk=bulk)
 
 # initialize canopy
 #-------------------
@@ -293,7 +318,7 @@ plt.legend()
 
 x = np.linspace(np.min(10*np.log10(pol_field.values.flatten()))-2, np.max(10*np.log10(pol_field.values.flatten()))+2, 16)
 plt.plot(x,x)
-plt.savefig('/media/tweiss/Daten/plots/scatterplot_'+field+'_'+pol+'_'+file_name)
+plt.savefig('/media/tweiss/Daten/plots/scatterplot_'+field+'_'+pol+'_'+file_name+'_'+S.models['surface']+'_'+S.models['canopy'])
 plt.close()
 
 
@@ -318,7 +343,7 @@ ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth
 # ax.plot(date, 10*np.log10(S.__dict__['s0c'][pol2]), 'cs-', label=pol+' s0c')
 # ax.plot(date, 10*np.log10(S.__dict__['s0cgt'][pol2]), 'ms-', label=pol+' s0cgt')
 # ax.plot(date, 10*np.log10(S.__dict__['s0gcg'][pol2]), 'ys-', label=pol+' s0gcg')
-ax.plot(date, 10*np.log10(S.__dict__['stot'][pol2][0]), 'C1s-', label='Oh92 + SSRT Pol: ' + pol)
+ax.plot(date, 10*np.log10(S.__dict__['stot'][pol2][0]), 'C1s-', label=S.models['surface']+ ' + ' +  S.models['canopy'] + ' Pol: ' + pol)
 ax.legend()
 ax.legend(loc=2, fontsize=12)
 
@@ -355,6 +380,6 @@ ax.set_ylim([np.min(10*np.log10(pol_field.values.flatten()))-2, np.max(10*np.log
 # ax3.set_xlim(['2017-03-20', '2017-08-08'])
 
 
-plt.savefig('/media/tweiss/Daten/plots/plot_'+field+'_'+pol+'_'+file_name)
+plt.savefig('/media/tweiss/Daten/plots/plot_'+field+'_'+pol+'_'+file_name+'_'+S.models['surface']+'_'+S.models['canopy'])
 plt.close()
 
