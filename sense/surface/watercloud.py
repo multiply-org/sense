@@ -29,8 +29,14 @@ class WaterCloudSurface(SurfaceScatter):
         super(WaterCloudSurface, self).__init__(mv=mv, theta=theta, C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv)
 
         # calculate surface component
-        self.vv = self._calc_vv()
-        self.hh = self._calc_hh()
+        if self.C_vv and self.D_vv:
+            self.vv = self._calc_vv()
+        else:
+            self.vv = None
+        if self.C_hh and self.D_hh:
+            self.hh = self._calc_hh()
+        else:
+            self.hh = None
         self.hv = None
 
     def _calc_vv(self):
@@ -43,8 +49,8 @@ class WaterCloudSurface(SurfaceScatter):
         f = plt.figure()
         ax = f.add_subplott(111)
         t = np.rad2deg(self.theta)
-        ax.plot(t, 10*np.log10(self.vv), color='blue')
-        # ax.plot(t, 10*np.log10(self.vv), color='red', label='vv')
+        ax.plot(t, 10*np.log10(self.hh), color='blue', label='hh')
+        ax.plot(t, 10*np.log10(self.vv), color='red', label='vv')
         # ax.plot(t, 10*np.log10(self.hv), color='green', label='hv')
         ax.grid()
         ax.set_ylim(-25.,0.)
