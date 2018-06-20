@@ -3,7 +3,7 @@ Basic class for scattering modelling
 """
 import pdb
 import numpy as np
-from . surface import Oh92, Oh04, Dubois95, WaterCloudSurface
+from . surface import Oh92, Oh04, Dubois95, WaterCloudSurface, I2EM
 from . util import f2lam
 from . scatterer import ScatIso, ScatRayleigh
 from . core import Reflectivity
@@ -309,7 +309,7 @@ class Ground(object):
         self._calc_rho()
 
     def _check(self, RT_s, RT_c):
-        valid_surface = ['Oh92', 'Oh04', 'Dubois95', 'WaterCloud']
+        valid_surface = ['Oh92', 'Oh04', 'Dubois95', 'WaterCloud', 'I2EM']
         valid_canopy = ['turbid_rayleigh', 'turbid_isotropic', 'water_cloud']
         assert RT_s in valid_surface, 'ERROR: invalid surface scattering model was chosen!'
         assert RT_c in valid_canopy, 'ERROR: invalid canopy model: ' + RT_c
@@ -322,6 +322,9 @@ class Ground(object):
             self.rt_s = Oh04(self.S.mv, self.S.ks, self.theta)
         elif RT_s == 'Dubois95':
             self.rt_s = Dubois95(self.S.eps, self.S.ks, self.theta, lam=f2lam(self.freq))
+        elif RT_s == 'I2EM':
+            assert False, 'Implementation not completed'
+            self.rt_s = I2EM(self.freq, self.S.eps, self.S.s, self.S.l, self.theta, xpol=True, auto=False)
         elif RT_s == 'WaterCloud':
             if (self.S.C_hh is None) or (self.S.D_hh is None) or (self.S.C_vv is None) or (self.S.D_vv is None):
                 assert False, 'Empirical surface parameters for Water Cloud model not specified!'
@@ -362,6 +365,11 @@ class Ground(object):
         R = Reflectivity(self.S.eps, self.theta)
         self.rho_v = R.v * np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
         self.rho_h = R.h * np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
+
+        # implementation in matlab code and book of Ulaby. (Email response from Ulaby: Don't know why he didn't use the roughness correction. He actually would use the roughness corrected version!!)
+        # self.rho_v = R.v
+        # self.rho_h = R.h
+
 
 
     def sigma_g_c_g(self):
@@ -462,7 +470,7 @@ class CanopyHomoRT(object):
 
         self.t_h = np.exp(-self.tau_h)
         self.t_v = np.exp(-self.tau_v)
-
+        # pdb.set_trace()
         self._set_scat_type()
         self.sigma_vol_back = self._calc_back_volume()
         self.sigma_vol_bistatic = self._calc_sigma_bistatic()
@@ -475,10 +483,10 @@ class CanopyHomoRT(object):
         assert self.ks_h is not None
         assert self.ks_v is not None
 
-        assert self.ke_h.min() >=0.
-        assert self.ke_v.min() >=0.
-        assert self.ks_h.min() >=0.
-        assert self.ks_v.min() >=0.
+        # assert self.ke_h.min() >=0.
+        # assert self.ke_v.min() >=0.
+        # assert self.ks_h.min() >=0.
+        # assert self.ks_v.min() >=0.
 
         # assert self.ks_h <= self.ke_h
         # assert self.ks_v <= self.ke_v
