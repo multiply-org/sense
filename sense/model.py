@@ -127,9 +127,9 @@ class RTModel(Model):
             return None
         # return np.nansum(np.array([self.s0g[k], self.s0c[k], self.s0gcg[k], self.s0cgt[k]]))
         if (self.models['canopy'] == 'turbid_isotropic') or (self.models['canopy'] == 'turbid_rayleigh'):
-            return np.array([self.s0g[k] + self.s0c[k] + self.s0gcg[k] + self.s0cgt[k]])
+            return np.array(self.s0g[k] + self.s0c[k] + self.s0gcg[k] + self.s0cgt[k])
         elif (self.models['canopy'] == 'water_cloud'):
-            return np.array([self.s0g[k]+self.s0c[k]])
+            return np.array(self.s0g[k]+self.s0c[k])
         else:
             assert False, 'unknown canopy model!'
 
@@ -326,10 +326,10 @@ class Ground(object):
             assert False, 'Implementation not completed'
             self.rt_s = I2EM(self.freq, self.S.eps, self.S.s, self.S.l, self.theta, xpol=True, auto=False)
         elif RT_s == 'WaterCloud':
-            if (self.S.C_hh is None) or (self.S.D_hh is None) or (self.S.C_vv is None) or (self.S.D_vv is None):
+            if (self.S.C_hh is None) or (self.S.D_hh is None) or (self.S.C_vv is None) or (self.S.D_vv is None) or (self.S.C_hv is None) or (self.S.D_hv is None):
                 assert False, 'Empirical surface parameters for Water Cloud model not specified!'
             else:
-                self.rt_s = WaterCloudSurface(self.S.mv, self.theta, self.S.C_hh, self.S.C_vv, self.S.D_hh, self.S.D_vv)
+                self.rt_s = WaterCloudSurface(self.S.mv, self.theta, self.S.C_hh, self.S.C_vv, self.S.C_hv, self.S.D_hh, self.S.D_vv, self.S.D_hv)
         else:
             assert False, 'Unknown surface scattering model'
 
@@ -341,7 +341,7 @@ class Ground(object):
             self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, ks_h=self.C.ks_h, ks_v=self.C.ks_v, d=self.C.d, theta=self.theta, stype='rayleigh')
 
         elif RT_c == 'water_cloud':
-            self.rt_c = WaterCloudCanopy(A_hh=self.C.A_hh, B_hh=self.C.B_hh, A_vv=self.C.A_vv, B_vv=self.C.B_vv, V1=self.C.V1, V2=self.C.V2, theta=self.theta)
+            self.rt_c = WaterCloudCanopy(A_hh=self.C.A_hh, B_hh=self.C.B_hh, A_vv=self.C.A_vv, B_vv=self.C.B_vv, A_hv=self.C.A_hv, B_hv=self.C.B_hv, V1=self.C.V1, V2=self.C.V2, theta=self.theta)
         else:
             assert False, 'Invalid canopy scattering model: ' + RT_c
 
@@ -585,33 +585,38 @@ class WaterCloudCanopy(object):
         self.B_hh = kwargs.get('B_hh', None)
         self.A_vv = kwargs.get('A_vv', None)
         self.B_vv = kwargs.get('B_vv', None)
+        self.A_hv = kwargs.get('A_hv', None)
+        self.B_hv = kwargs.get('B_hv', None)
         self.V1 = kwargs.get('V1', None)
         self.V2 = kwargs.get('V2', None)
         self.theta = kwargs.get('theta', None)
         self.tau_h = self._tau(self.B_hh)
         self.tau_v = self._tau(self.B_vv)
+        self.tau_hv = self._tau(self.B_hv)
         self.t_h = np.sqrt(self.tau_h)
         self.t_v = np.sqrt(self.tau_v)
+        self.t_hv = np.sqrt(self.tau_hv)
 
     def _check(self):
         assert self.A_hh is not None
         assert self.B_hh is not None
         assert self.A_vv is not None
         assert self.B_vv is not None
+        assert self.A_hv is not None
+        assert self.B_hv is not None
         assert self.V1 is not None
         assert self.V2 is not None
         assert self.theta is not None
 
     def sigma_c(self):
-        # change vh !!!!!!!!!!!!!!!!!!!!!!!!!!!111
         s_hh =  self.A_hh * self.V1 * np.cos(self.theta) * (1 - self._tau(self.B_hh))
         s_vv = self.A_vv * self.V1 * np.cos(self.theta) * (1 - self._tau(self.B_vv))
-        s_hv =  self.A_vv * self.V1 * np.cos(self.theta) * (1 - self._tau(self.B_vv))
-
+        s_hv =  self.A_hv * self.V1 * np.cos(self.theta) * (1 - self._tau(self.B_hv))
 
         return {'hh' : s_hh, 'vv' : s_vv, 'hv' : s_hv}
 
     def _tau(self, B):
+        # pdb.set_trace()
         return np.exp(-2 * B / np.cos(self.theta) * self.V2)
 
 

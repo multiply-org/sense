@@ -66,6 +66,8 @@ class Soil(object):
         self.D_hh = kwargs.get('D_hh', None)
         self.C_vv = kwargs.get('C_vv', None)
         self.D_vv = kwargs.get('D_vv', None)
+        self.C_hv = kwargs.get('C_hv', None)
+        self.D_hv = kwargs.get('D_hv', None)
         self.V2 = kwargs.get('V2', None)
 
     def _convert_mv2eps(self):
