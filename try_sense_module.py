@@ -20,9 +20,9 @@ import pdb
 #-----------------------
 path = '/media/tweiss/Daten'
 file_name = 'multi'
-field = '508'
-pol = 'vv'
-pol2 = 'vv'
+field = '515'
+pol = 'vh'
+pol2 = 'hv'
 """theta needs to be changed to for norm multi'!!!!!!!!!!!!!!!!"""
 
 # Read auxiliary data
@@ -31,17 +31,17 @@ df = pd.io.parsers.read_csv(os.path.join(path, file_name + '.csv'), header=[0, 1
 df = df.set_index(pd.to_datetime(df[field]['date']))
 df = df.drop(df.filter(like='date'), axis=1)
 
-# Agrarmeteorologische Station Eichenried
-path_agrar = '/media/nas_data/2017_MNI_campaign/field_data/meteodata/agrarmeteorological_station'
-name_agrar = 'Eichenried_01012017_31122017_hourly'
+# # Agrarmeteorologische Station Eichenried
+# path_agrar = '/media/nas_data/2017_MNI_campaign/field_data/meteodata/agrarmeteorological_station'
+# name_agrar = 'Eichenried_01012017_31122017_hourly'
 
-df_agrar = pd.read_csv(os.path.join(path_agrar, name_agrar + '.csv'), sep=';', decimal=',')
-df_agrar['SUM_NN050'] = df_agrar['SUM_NN050'].str.replace(',','.')
-df_agrar['SUM_NN050'] = df_agrar['SUM_NN050'].str.replace('-','0').astype(float)
+# df_agrar = pd.read_csv(os.path.join(path_agrar, name_agrar + '.csv'), sep=';', decimal=',')
+# df_agrar['SUM_NN050'] = df_agrar['SUM_NN050'].str.replace(',','.')
+# df_agrar['SUM_NN050'] = df_agrar['SUM_NN050'].str.replace('-','0').astype(float)
 
-df_agrar['date'] = df_agrar['Tag']+' '+df_agrar['Stunde']
+# df_agrar['date'] = df_agrar['Tag']+' '+df_agrar['Stunde']
 
-df_agrar = df_agrar.set_index(pd.to_datetime(df_agrar['date'], format='%d.%m.%Y %H:%S'))
+# df_agrar = df_agrar.set_index(pd.to_datetime(df_agrar['date'], format='%d.%m.%Y %H:%S'))
 
 # filter for field
 #-------------------
@@ -108,6 +108,7 @@ clay = 0.3
 sand = 0.4
 bulk = 1.65
 s = 0.015
+s = 0.015
 
 #### Dubois
 #-----------
@@ -127,7 +128,8 @@ B_hv = -0.04186564
 #### SSRT canopy
 #---------------
 coef = 1.
-omega = 0.007
+# omega = 0.007
+omega = 0.145
 # coef = 1.10240852
 # omega = 0.04536135
 # coef = np.arange(len(theta_field), dtype=float)
@@ -182,7 +184,8 @@ models = {'surface': surface, 'canopy': canopy}
 def solve_fun_SSRT(coef):
 
     # ke = coef * np.sqrt(lai)
-    ke = coef * np.sqrt(vwc)
+    ke = coef * np.exp(vwc)
+    ke = np.array(coef)
 
     # initialize surface
     #--------------------
@@ -301,7 +304,7 @@ bbb = []
 ccc = []
 ddd = []
 
-n = 3
+n = 9
 for i in range(len(lai_508_old)-n+1):
     lai = lai_508_old[i:i+n]
     vwc = vwc_508_old[i:i+n]
@@ -312,7 +315,7 @@ for i in range(len(lai_508_old)-n+1):
     theta = theta_old[i:i+n]
     d = d_old[i:i+n]
     # res = minimize(fun_opt,guess,bounds=[(0.0001,200.),(0.0001,200.)], method='L-BFGS-B')
-    res = minimize(fun_opt,guess,bounds=[(0.001,200.)])
+    res = minimize(fun_opt,guess,bounds=[(0.00001,2.)])
     # res = minimize(fun_opt,guess,bounds=[(0.001,200.),(-100.,200.),(-100.,200.)])
     # res = minimize(fun_opt,guess,bounds=[(-200.,200.),(-100.,200.),(-100.,200.),(-100.,200.)])
     # res = minimize(fun_opt,guess,bounds=[(-200.,200.),(-100.,200.)])
@@ -348,8 +351,9 @@ coef = aaa
 
 
 # ke = coef * np.sqrt(lai_field.values.flatten())
-ke = coef * np.sqrt(vwc_field.values.flatten())
-# ke = 1.3
+ke = coef * np.exp(vwc_field.values.flatten())
+ke = np.array(coef)
+# ke = 0.2
 # A_vv = np.array(aaa)
 # B_vv = np.array(bbb)
 # C_vv = np.array(ccc)
@@ -449,11 +453,11 @@ ax8.set_ylabel('SM')
 ax8.spines['right'].set_position(('outward', 30))
 
 
-ax9 = ax.twinx()
-ax9.bar(df_agrar.index, df_agrar['SUM_NN050'], 0.1)
-ax9.set_ylabel('precip', ha='left')
-ax9.spines['right'].set_position(('outward', 60))
-ax9.set_ylim([0,15])
+# ax9 = ax.twinx()
+# ax9.bar(df_agrar.index, df_agrar['SUM_NN050'], 0.1)
+# ax9.set_ylabel('precip', ha='left')
+# ax9.spines['right'].set_position(('outward', 60))
+# ax9.set_ylim([0,15])
 
 ax.grid(linestyle='-', linewidth=1)
 ax.grid(b=True, which='minor', linestyle='--', linewidth=0.5)
@@ -470,12 +474,14 @@ ax.set_ylim([-30,-5])
 # ax2.get_yaxis().set_ticks([])
 # ax2.set_ylim([0,8])
 # ax3.set_ylim([0,8])
-ax9.set_xlim(['2017-03-20', '2017-07-15'])
+# ax9.set_xlim(['2017-03-20', '2017-07-15'])
+ax.set_xlim(['2017-06-01', '2017-09-30'])
 
 slope, intercept, r_value, p_value, std_err = scipy.stats.linregress((pol_field.values.flatten()), (S.__dict__['stot'][pol2]))
 slope1, intercept1, r_value1, p_value1, std_err1 = scipy.stats.linregress(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__dict__['stot'][pol2]))
 
 plt.title('Winter Wheat, R2 = ' + str(r_value))
+pdb.set_trace()
 plt.show()
 plt.savefig('/media/tweiss/Daten/plots/plot_'+field+'_'+pol+'_'+file_name+'_'+S.models['surface']+'_'+S.models['canopy'])
 plt.close()
