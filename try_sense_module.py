@@ -16,13 +16,16 @@ from scipy.optimize import minimize
 import pdb
 
 
+def rmse(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean())
+
 # Import auxiliary data
 #-----------------------
 path = '/media/tweiss/Daten'
 file_name = 'multi'
-field = '515'
-pol = 'vv'
-pol2 = 'vv'
+field = '508'
+pol = 'vh'
+pol2 = 'hv'
 """theta needs to be changed to for norm multi'!!!!!!!!!!!!!!!!"""
 
 # Read auxiliary data
@@ -107,8 +110,10 @@ D_hv = 14.07248098
 clay = 0.3
 sand = 0.4
 bulk = 1.65
+# vh 508
 s = 0.015
-s = 0.015
+# vv 508
+# s = 0.0095
 
 #### Dubois
 #-----------
@@ -129,9 +134,12 @@ B_hv = -0.04186564
 #---------------
 coef = 1.
 # omega = 0.007
-omega = 0.145
+
+# vv 508
+omega = 0.022
 # coef = 1.10240852
-# omega = 0.04536135
+# vh 508
+omega = 0.010536135
 # coef = np.arange(len(theta_field), dtype=float)
 # coef[0:35] = 1.10240852
 # coef[35:len(coef)] = 0.3
@@ -183,7 +191,7 @@ models = {'surface': surface, 'canopy': canopy}
 
 def solve_fun_SSRT(coef):
 
-    ke = coef * (lai)
+    ke = coef * np.sqrt(lai)
     # ke = coef * np.exp(vwc)
     ke = np.array(coef)
 
@@ -315,7 +323,7 @@ for i in range(len(lai_508_old)-n+1):
     theta = theta_old[i:i+n]
     d = d_old[i:i+n]
     # res = minimize(fun_opt,guess,bounds=[(0.0001,200.),(0.0001,200.)], method='L-BFGS-B')
-    res = minimize(fun_opt,guess,bounds=[(0.00001,2.)])
+    res = minimize(fun_opt,guess,bounds=[(0.00001,10.)])
     # res = minimize(fun_opt,guess,bounds=[(0.001,200.),(-100.,200.),(-100.,200.)])
     # res = minimize(fun_opt,guess,bounds=[(-200.,200.),(-100.,200.),(-100.,200.),(-100.,200.)])
     # res = minimize(fun_opt,guess,bounds=[(-200.,200.),(-100.,200.)])
@@ -350,7 +358,7 @@ coef = aaa
 # coef = [2.8211794522771836, 3.5425090255370901, 3.2928811420649549, 3.7054736773563386, 2.8961183027242945, 2.6151602913331349, 2.4189863720217848, 2.4167831184418151, 2.9416289237554785, 3.173742070422747, 3.2383792609197575, 2.7931417278929307, 3.1121882936071223, 3.1256520435841559, 3.4783185812129198, 3.221982368854273, 3.3728926537091137, 3.3781506298071911, 3.2569473671053992, 2.4663320815477578, 2.1141754601248004, 2.1209806250929346, 2.0649019533248212, 2.9544567022270387, 3.2224869016201918, 3.2369640163741287, 3.1260764088434825, 2.2886755717903537, 2.444457485088495, 2.4480123008899097, 2.9424868137311013, 2.6918809874287475, 2.7294523688168129, 2.797705352991366, 2.0186456268959168, 2.8744575821617224, 3.044882444109152, 2.9802180637002609, 2.6019756936977609, 2.5503946347668287, 2.3604725553358343, 2.3317510351411883, 1.9275854991156061, 2.2753308530216287, 2.4092428831073858, 2.3698519298054159, 1.9286656987151718, 1.6963728219945839, 2.0918823569585152, 1.9957476741875333, 1.7201838997262218, 1.4695235195381868, 1.5361435193274382, 1.6667889407678251, 0.82853524517534494, 0.79365611796719404, 0.83635432955114541, 0.74755549562741264, 0.52765406146373417, 0.48239419873329636, 0.54280068255034319, 0.5049404990262979, 0.38576228044679073, 0.45119396015499219, 0.5469751828940197, 0.57279234317771832, 0.38171780066089117, 0.34532639205524862, 0.31494432189245669, 0.29321333743882261, 0.17349153645934853, 0.23334377236206902, 0.30119514955623677, 0.35404564503560393]
 
 
-ke = coef * (lai_field.values.flatten())
+ke = coef * np.sqrt(lai_field.values.flatten())
 # ke = coef * np.exp(vwc_field.values.flatten())
 ke = np.array(coef)
 # ke = 0.2
@@ -429,8 +437,10 @@ ax.legend(loc=2, fontsize=12)
 # ax2.set_ylabel('LAI [m$^3$/m$^3$]', fontsize=15, color='green')
 ax3 = ax.twinx()
 # ax3.set_ylabel('VWC [kg/m$^2$]', fontsize=15, color='blue')
-
-ax3.plot(date,coef)
+ax3.tick_params(labelsize=12)
+lns2 = ax3.plot(date,ke, color='blue', label='Volume extinction coefficient')
+ax3.set_ylabel('Volume extinction coefficient [Np/m]', fontsize=15)
+ax3.yaxis.label.set_color('blue')
 # ax3.plot(date,ke)
 # ax4 = ax2.twinx()
 # ax4.plot(sm_field)
@@ -440,17 +450,25 @@ ax3.plot(date,coef)
 # ax5.plot(height_field, 'g-')
 
 ax6 = ax.twinx()
-ax6.plot(vwc_field, 'g')
-ax6.set_ylabel('VWC [kg/m2]')
-# ax6.spines['right'].set_position(('outward', 30))
+ax6.tick_params(labelsize=12)
+lns1 = ax6.plot(vwc_field, 'g', label='VWC')
+ax6.set_ylabel('VWC [kg/m2]', fontsize=15, color='green')
+ax6.yaxis.label.set_color('green')
+ax6.spines['right'].set_position(('outward', 60))
+
+lns = lns1+lns2
+labs = [l.get_label() for l in lns]
+ax3.legend(lns, labs, loc=0, fontsize=12)
+
+
 
 # ax7 = ax2.twinx()
 # ax7.plot(lai_field, 'c')
 
-ax8 = ax.twinx()
-ax8.plot(sm_field, '+')
-ax8.set_ylabel('SM')
-ax8.spines['right'].set_position(('outward', 30))
+# ax8 = ax.twinx()
+# ax8.plot(sm_field, '+')
+# ax8.set_ylabel('SM')
+# ax8.spines['right'].set_position(('outward', 30))
 
 
 # ax9 = ax.twinx()
@@ -474,17 +492,19 @@ ax.set_ylim([-30,-5])
 # ax2.get_yaxis().set_ticks([])
 # ax2.set_ylim([0,8])
 # ax3.set_ylim([0,8])
-# ax9.set_xlim(['2017-03-20', '2017-07-15'])
-ax.set_xlim(['2017-06-01', '2017-09-30'])
+ax.set_xlim(['2017-03-20', '2017-07-15'])
+# ax.set_xlim(['2017-06-01', '2017-09-30'])
 
 slope, intercept, r_value, p_value, std_err = scipy.stats.linregress((pol_field.values.flatten()), (S.__dict__['stot'][pol2]))
 slope1, intercept1, r_value1, p_value1, std_err1 = scipy.stats.linregress(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__dict__['stot'][pol2]))
+rmse = rmse(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__dict__['stot'][pol2]))
 
-plt.title('Winter Wheat, R2 = ' + str(r_value))
-pdb.set_trace()
-plt.show()
+plt.title('Winter Wheat, R2 = ' + str(r_value) + ' RMSE = ' + str(rmse))
+# pdb.set_trace()
+# plt.show()
 plt.savefig('/media/tweiss/Daten/plots/plot_'+field+'_'+pol+'_'+file_name+'_'+S.models['surface']+'_'+S.models['canopy'])
 plt.close()
+
 
 
 pdb.set_trace()
