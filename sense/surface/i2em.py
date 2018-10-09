@@ -18,6 +18,8 @@ from past.builtins import xrange
 
 from numba import jit
 
+import pdb
+
 @jit(cache=True,nopython=True)
 def _calc_roughness_spectra_matrix(nx, ny, kl2, nspec, s, acf_type_id):
     """
@@ -79,6 +81,7 @@ class I2EM(SurfaceScatter):
         self.l = l
         self._kl2 = (self.k*self.l)**2.
         self.acf_type = kwargs.get('acf_type', 'gauss')
+        # pdb.set_trace()
         super(I2EM, self).__init__(eps, k*sig, theta, kl=k*l)
 
         # assume backscatter geometry
@@ -91,8 +94,9 @@ class I2EM(SurfaceScatter):
         self.xpol = kwargs.get('xpol', True)
 
         # do initializations for backscatter calculations
-        self._init_hlp()
-        self.init_model()
+        # self._init_hlp()
+        # self.init_model()
+        # pdb.set_trace()
 
         # calculate the actual backscattering coefficients
         self._calc_sigma_backscatter()
@@ -131,7 +135,9 @@ class I2EM(SurfaceScatter):
         Ts = 1
         while err > 1.0e-8:
             Ts += 1
-            err = ((self._ks2 *(self._cs + self._css)**2 )**Ts) / math.factorial(Ts)
+            err = ((self._ks2 *(np.mean(self._cs) + np.mean(self._css))**2 )**Ts) / math.factorial(Ts)
+            # err = ((self._ks2 *(self._cs + self._css)**2 )**Ts) / math.factorial(Ts)
+            # pdb.set_trace()
         return Ts
 
 
@@ -157,11 +163,47 @@ class I2EM(SurfaceScatter):
         self._ksz = self.k * self._css
 
     def _calc_sigma_backscatter(self):
-        assert isinstance(self.theta, float), 'Currently array processing not supported yet!'
+        # assert isinstance(self.theta, float), 'Currently array processing not supported yet!'
         # calculate backscattering coefficients
-        self.vv, self.hh = self._i2em_bistatic()
-        if self.xpol:
-            self.hv = self._i2em_cross()
+        # pdb.set_trace()
+
+        if type(self.eps) is np.ndarray:
+
+            self.vv = []
+            self.hh = []
+            theta_origin = self.theta
+            thetas_origin = self.thetas
+            eps_origin = self.eps
+
+            if self.xpol:
+                self.hv = []
+
+            for i in range(len(self.eps)):
+                self.i = i
+                if type(theta_origin) is np.ndarray:
+                    self.theta = theta_origin[i]
+                    self.thetas = thetas_origin[i]
+
+                self._init_hlp()
+                self.init_model()
+
+                self.eps=eps_origin[i]
+
+                # pdb.set_trace()
+                vv, hh = self._i2em_bistatic()
+                self.vv.append(vv)
+                self.hh.append(hh)
+
+                if self.xpol:
+                    hv = self._i2em_cross()
+                    self.hv.append(hv)
+        else:
+            self._init_hlp()
+            self.init_model()
+            self.vv, self.hh = self._i2em_bistatic()
+            if self.xpol:
+                self.hv = self._i2em_cross()
+
 
     def _i2em_bistatic(self):
         """
@@ -316,6 +358,7 @@ class I2EM(SurfaceScatter):
             rslp = self.rss
             ctorslp = ct / math.sqrt(2.) /rslp
             ctsorslp = cts / np.sqrt(2.) /rslp
+
             shadf = 0.5 *(np.exp(-ctorslp**2.) / np.sqrt(np.pi)/ctorslp - math.erfc(ctorslp))
             shadfs = 0.5 *(np.exp(-ctsorslp**2.) / np.sqrt(np.pi)/ctsorslp - math.erfc(ctsorslp))
             ShdwS = 1./(1. + shadf + shadfs)
@@ -346,6 +389,7 @@ class I2EM(SurfaceScatter):
         qi = self.k*self._cs
         qs = self.k*self._css
 
+
         h1= np.exp(-self.sig**2. * self._kz * self._ksz)*(self._kz + self._ksz)**n
 
         # Calculate the Fppup(dn) i(s) coefficient
@@ -360,7 +404,7 @@ class I2EM(SurfaceScatter):
 
         # fpp calculations
         fvv, fhh = self.calc_fpp(Rvi, Rhi)
-
+        # pdb.set_trace()
         # Ipp
         Ivv = fvv*h1
         Ivv += 0.25*(Fvvupi *(self._ksz-qi)**(n-1) *np.exp(-self.sig**2. *(qi**2. - qi*(self._ksz-self._kz))))
@@ -517,6 +561,7 @@ class Roughness(object):
         self.phi = kwargs.get('phi', None)
         self.phis = kwargs.get('phis', None)
         self.freq = kwargs.get('freq', None)
+        self.i = kwargs.get('i', None)
 
         self._check()
         self.n = np.arange(self.niter)+1
@@ -573,6 +618,9 @@ class GaussianSpectrum(Roughness):
     def wn(self):
         # Fung (1994), Eq. 2B.4; except for wvnb
         n = self.n
+        # xx, yy = np.meshgrid(n, self.wvnb)
+        # wn = (self.l**2.)/(2.*n) * np.exp(-(yy*self.l)**2. / (4.*xx))
+        # pdb.set_trace()
         wn = (self.l**2.)/(2.*n) * np.exp(-(self.wvnb*self.l)**2. / (4.*n))
         rss = np.sqrt(2.)*self.sig/self.l
         return wn, rss

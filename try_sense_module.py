@@ -24,8 +24,8 @@ def rmse(predictions, targets):
 path = '/media/tweiss/Daten'
 file_name = 'multi'
 field = '508'
-pol = 'vh'
-pol2 = 'hv'
+pol = 'vv'
+pol2 = 'vv'
 """theta needs to be changed to for norm multi'!!!!!!!!!!!!!!!!"""
 
 # Read auxiliary data
@@ -96,14 +96,16 @@ freq = 5.
 #----------------
 C_hh = -13.19637386
 D_hh = 14.01814786
+C_hv = -13.19637386
+D_hv = 14.01814786
 C_vv = -13.18550537
 D_vv = 14.07248098
 
 # C_vv = -0.1
 # D_vv = 0.1
 
-C_hv = -19.0
-D_hv = -4.4
+# C_hv = -19.0
+# D_hv = -4.4
 
 #### Oh92
 #--------
@@ -124,13 +126,15 @@ s = 0.015
 #----------------
 A_hh = -0.46323766
 B_hh = -0.07569564
+A_hv = -0.46323766
+B_hv = -0.07569564
 A_vv = 0.0029
 B_vv = 0.33
 
 
 
-A_hv = 0.00080064250078689146
-B_hv = 0.4
+# A_hv = 0.00080064250078689146
+# B_hv = 0.4
 # A_hv = 1.88471267985991611
 # B_hv = 0.98652193533271915
 
@@ -141,7 +145,7 @@ coef = 1.
 
 # vv 508
 omega = 0.022
-# coef = 1.10240852
+# coef = 0.10240852
 # vh 508
 omega = 0.010536135
 # coef = np.arange(len(theta_field), dtype=float)
@@ -153,14 +157,15 @@ omega = 0.010536135
 # surface = 'Oh92'
 # surface = 'Oh04'
 # surface = 'Dubois95'
-surface = 'WaterCloud'
-# canopy = 'turbid_isotropic'
+# surface = 'WaterCloud'
+surface = 'I2EM'
+canopy = 'turbid_isotropic'
 # canopy = 'turbid_rayleigh'
-canopy = 'water_cloud'
+# canopy = 'water_cloud'
 
 models = {'surface': surface, 'canopy': canopy}
 
-
+l = 0.05
 
 
 # Optimisation
@@ -193,31 +198,31 @@ models = {'surface': surface, 'canopy': canopy}
 # guess = [0.1, 0.045]
 
 
-# def solve_fun_SSRT(coef):
+def solve_fun_SSRT(coef):
 
-#     ke = coef * np.sqrt(lai)
-#     # ke = coef * np.exp(vwc)
-#     # ke = np.array(coef)
+    ke = coef * np.sqrt(lai)
+    # ke = coef * np.exp(vwc)
+    # ke = np.array(coef)
 
-#     # initialize surface
-#     #--------------------
-#     soil = Soil(mv=sm, C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, C_hv=C_hv, D_hv=D_hv, V2=lai, s=s, clay=clay, sand=sand, f=freq, bulk=bulk)
+    # initialize surface
+    #--------------------
+    soil = Soil(mv=sm, C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, C_hv=C_hv, D_hv=D_hv, V2=lai, s=s, clay=clay, sand=sand, f=freq, bulk=bulk)
 
-#     # initialize canopy
-#     #-------------------
-#     can = OneLayer(canopy=canopy, ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke, V1=lai, V2=lai, A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv, A_hv=A_hv, B_hv=B_hv)
+    # initialize canopy
+    #-------------------
+    can = OneLayer(canopy=canopy, ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke, V1=lai, V2=lai, A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv, A_hv=A_hv, B_hv=B_hv)
 
-#     # run SenSe module
-#     #------------------
-#     S = model.RTModel(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
-#     S.sigma0()
+    # run SenSe module
+    #------------------
+    S = model.RTModel(surface=soil, canopy=can, models=models, theta=theta, freq=freq)
+    S.sigma0()
 
-#     return S.__dict__['stot'][pol2]
+    return S.__dict__['stot'][pol2]
 
-# def fun_opt(VALS):
-#     return(np.sum(np.square(solve_fun_SSRT(VALS[0])-pol_value)))
+def fun_opt(VALS):
+    return(np.sum(np.square(solve_fun_SSRT(VALS[0])-pol_value)))
 
-# guess = [0.1]
+guess = [0.1]
 
 
 # def solve_fun_surfacewatercloud(coef, C_vv, D_vv):
@@ -303,7 +308,7 @@ def solve_fun_watercloud(C_hv, D_hv):
 
     # initialize surface
     #--------------------
-    soil = Soil(mv=sm, C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, C_hv=C_hv, D_hv=D_hv, V2=lai, s=s, clay=clay, sand=sand, f=freq, bulk=bulk)
+    soil = Soil(mv=sm, C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, C_hv=C_hv, D_hv=D_hv, V2=lai, s=s, clay=clay, sand=sand, f=freq, bulk=bulk, l=l)
 
     # initialize canopy
     #-------------------
@@ -382,7 +387,7 @@ for i in range(len(lai_508_old)-n+1):
     # res = minimize(fun_opt,guess,bounds=[(0.,0.5)])
     fun_opt(res.x)
     aaa.append(res.x[0])
-    bbb.append(res.x[1])
+    # bbb.append(res.x[1])
 #     ccc.append(res.x[2])
 #     ddd.append(res.x[3])
 
@@ -421,8 +426,8 @@ ke = coef * np.sqrt(lai_field.values.flatten())
 # D_vv = np.array(ddd)
 # C_vv = np.array(aaa)
 # D_vv = np.array(bbb)
-C_hv = np.array(aaa)
-D_hv = np.array(bbb)
+# C_hv = np.array(aaa)
+# D_hv = np.array(bbb)
 # pdb.set_trace()
 # A_vv = 0.003
 # B_vv = 0.25
@@ -430,7 +435,7 @@ D_hv = np.array(bbb)
 
 # initialize surface
 #--------------------
-soil = Soil(mv=sm_field.values.flatten(), C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, C_hv=C_hv, D_hv=D_hv, V2=lai_field.values.flatten(), s=s, clay=clay, sand=sand, f=freq, bulk=bulk)
+soil = Soil(mv=sm_field.values.flatten(), C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, C_hv=C_hv, D_hv=D_hv, V2=lai_field.values.flatten(), s=s, clay=clay, sand=sand, f=freq, bulk=bulk, l=l)
 
 # initialize canopy
 #-------------------
