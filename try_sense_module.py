@@ -91,10 +91,10 @@ pol_field = field_data.filter(like='sigma_sentinel_'+pol)
 #-----------------------------------------------------------------
 ## Choose models
 #---------------
-# surface = 'Oh92'
+surface = 'Oh92'
 # surface = 'Oh04'
 # surface = 'Dubois95'
-surface = 'WaterCloud'
+# surface = 'WaterCloud'
 # surface = 'I2EM'
 canopy = 'turbid_isotropic'
 # canopy = 'turbid_rayleigh'
@@ -104,7 +104,7 @@ models = {'surface': surface, 'canopy': canopy}
 
 ## Parameters
 #----------------
-freq = 5.
+freq = 5.405
 
 ### Surface
 #----------
@@ -120,16 +120,17 @@ V2 = lai_field.values.flatten()
 
 #### Oh92
 #----------------
-clay = 0.3
-sand = 0.4
-bulk = 1.65
+clay = 0.08
+sand = 0.12
+bulk = 1.5
 # vh 508
-# s = 0.015
+s = 0.0075
 # vv 508
-s = 0.0095
+# s = 0.006
 
 #### Dubois
 #----------------
+
 
 #### I2EM
 #----------------
@@ -152,7 +153,7 @@ V2 = V2 # initialize in surface model
 #---------------
 coef = 1.
 # vv 508
-omega = 0.022
+omega = 0.0373
 # vh 508
 # omega = 0.010536135
 
@@ -189,9 +190,13 @@ for i in range(len(pol_field.values.flatten())-n+1):
 
     dic = {"mv":sm_field.values.flatten()[i:i+n], "C_hh":C_hh, "C_vv":C_vv, "D_hh":D_hh, "D_vv":D_vv, "C_hv":C_hv, "D_hv":D_hv, "V2":V2[i:i+n], "s":s, "clay":clay, "sand":sand, "f":freq, "bulk":bulk, "l":l, "canopy":canopy, "d":height_field.values.flatten()[i:i+n], "V1":V1[i:i+n], "A_hh":A_hh, "B_hh":B_hh, "A_vv":A_vv, "B_vv":B_vv, "A_hv":A_hv, "B_hv":B_hv, "lai":lai_field.values.flatten()[i:i+n], "vwc":vwc_field.values.flatten()[i:i+n], "pol_value":pol_field.values.flatten()[i:i+n], "theta":theta_field.values.flatten()[i:i+n], "omega": omega}
 
-    var_opt = ['coef', 'omega']
-    guess = [0.1, 0.22]
-    bounds = [(0.,0.5),(0.,0.5)]
+    var_opt = ['coef']
+    guess = [0.1]
+    bounds = [(0.,20.5)]
+
+    # var_opt = ['coef', 'omega']
+    # guess = [0.1, 0.22]
+    # bounds = [(0.,0.5),(0.,0.5)]
     # method = 'L-BFGS-B'
     res = minimize(fun_opt,guess,bounds=bounds)
 
@@ -220,7 +225,7 @@ pol_field = field_data.filter(like='sigma_sentinel_'+pol)
 
 
 coef = [el[0] for el in aaa]
-omega = [el[1] for el in aaa]
+# omega = [el[1] for el in aaa]
 
 
 ke = coef * np.sqrt(lai_field.values.flatten())
@@ -277,8 +282,8 @@ ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth
 
 ax.plot(date, 10*np.log10(S.__dict__['s0g'][pol[::-1]]), 'rs-', label=pol+' s0g')
 ax.plot(date, 10*np.log10(S.__dict__['s0c'][pol[::-1]]), 'cs-', label=pol+' s0c')
-# ax.plot(date, 10*np.log10(S.__dict__['s0cgt'][pol[::-1]]), 'ms-', label=pol+' s0cgt')
-# ax.plot(date, 10*np.log10(S.__dict__['s0gcg'][pol[::-1]]), 'ys-', label=pol+' s0gcg')
+ax.plot(date, 10*np.log10(S.__dict__['s0cgt'][pol[::-1]]), 'ms-', label=pol+' s0cgt')
+ax.plot(date, 10*np.log10(S.__dict__['s0gcg'][pol[::-1]]), 'ys-', label=pol+' s0gcg')
 ax.plot(date, 10*np.log10(S.__dict__['stot'][pol[::-1]]), 'C1s-', label=S.models['surface']+ ' + ' +  S.models['canopy'] + ' Pol: ' + pol)
 ax.legend()
 ax.legend(loc=2, fontsize=12)
@@ -290,13 +295,13 @@ ax.legend(loc=2, fontsize=12)
 # ax2.legend(loc=1, fontsize=12)
 # ax2.tick_params(labelsize=12)
 # ax2.set_ylabel('LAI [m$^3$/m$^3$]', fontsize=15, color='green')
-# ax3 = ax.twinx()
-# # ax3.set_ylabel('VWC [kg/m$^2$]', fontsize=15, color='blue')
-# ax3.tick_params(labelsize=12)
-# lns2 = ax3.plot(date,ke, color='blue', label='Volume extinction coefficient')
-# ax3.set_ylabel('Volume extinction coefficient [Np/m]', fontsize=15)
-# ax3.yaxis.label.set_color('blue')
-# ax3.plot(date,ke)
+ax3 = ax.twinx()
+ax3.set_ylabel('VWC [kg/m$^2$]', fontsize=15, color='blue')
+ax3.tick_params(labelsize=12)
+lns2 = ax3.plot(date,ke, color='blue', label='Volume extinction coefficient')
+ax3.set_ylabel('Volume extinction coefficient [Np/m]', fontsize=15)
+ax3.yaxis.label.set_color('blue')
+ax3.plot(date,ke, 'bs-')
 # ax4 = ax2.twinx()
 # ax4.plot(sm_field)
 # ax4.set_ylim([-0.8,0.4])
@@ -355,8 +360,6 @@ slope1, intercept1, r_value1, p_value1, std_err1 = scipy.stats.linregress(10*np.
 rmse = rmse(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__dict__['stot'][pol[::-1]]))
 
 plt.title('Winter Wheat, R2 = ' + str(r_value) + ' RMSE = ' + str(rmse))
-# pdb.set_trace()
-# plt.show()
 plt.savefig('/media/tweiss/Daten/plots/plot_'+field+'_'+pol+'_'+file_name+'_'+S.models['surface']+'_'+S.models['canopy'])
 plt.close()
 

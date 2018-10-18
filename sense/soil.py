@@ -11,6 +11,8 @@ class Soil(object):
         """
         Parameters
         ----------
+        surface: string
+            name of used RT-model for surface contribution
         eps : complex
             relative permitivity, if this is not given, then mv needs to be given
         s : float
@@ -34,6 +36,7 @@ class Soil(object):
         empirical soil parameters water cloud model missing!!!!
         """
 
+        self.surface = kwargs.get('surface', None)
         self.eps = kwargs.get('eps', None)
         self.mv = kwargs.get('mv', None)
         self.f = kwargs.get('f', None)
@@ -48,18 +51,19 @@ class Soil(object):
         if self.eps is not None:
             self._convert_eps2mv()
         if self.mv is not None:
-            self._convert_mv2eps()
+            if self.surface != 'WaterCloud':
+                self._convert_mv2eps()
 
+        if self.surface != 'WaterCloud':
+            # wavenumber
+            self.k = 2.*np.pi / f2lam(self.f)  # note that wavenumber is in meter and NOT in cm!
 
-        # wavenumber
-        self.k = 2.*np.pi / f2lam(self.f)  # note that wavenumber is in meter and NOT in cm!
-
-        # roughness parameters
-        self.ks = self.s*self.k
-        if self.l is not None:
-            self.kl = self.k*self.l
-        else:
-            self.kl = None
+            # roughness parameters
+            self.ks = self.s*self.k
+            if self.l is not None:
+                self.kl = self.k*self.l
+            else:
+                self.kl = None
 
         # Empirical soil parameters for Water Cloud model
         self.C_hh = kwargs.get('C_hh', None)
@@ -100,7 +104,8 @@ class Soil(object):
     def _check(self):
         if self.acl is not None:
             assert self.acl in ['G','E'], 'Invalid form of autocorrelation function specified'
-        assert self.s is not None
+        if self.surface != 'WaterCloud':
+            assert self.s is not None
 
         if self.eps is None:
             assert self.mv is not None, 'Either EPS or MV need to be given!'

@@ -83,8 +83,8 @@ class RTModel(Model):
 
         for k in ['surface', 'canopy']:
             assert k in self.models.keys()  # check that all models have been specified
-
-        assert self.freq == self.surface.f, "Different frequencies in model and soil definition"
+        if self.surface.surface != 'WaterCloud':
+            assert self.freq == self.surface.f, "Different frequencies in model and soil definition"
             # check that frequencies are the same!
 
     def _sigma0(self):
@@ -306,7 +306,8 @@ class Ground(object):
         self.freq = freq
         assert self.freq is not None, 'Frequency needs to be provided'
         self._set_models(RT_s, RT_c)
-        self._calc_rho()
+        if self.S.surface != 'WaterCloud':
+            self._calc_rho()
 
     def _check(self, RT_s, RT_c):
         valid_surface = ['Oh92', 'Oh04', 'Dubois95', 'WaterCloud', 'I2EM']
@@ -616,7 +617,6 @@ class WaterCloudCanopy(object):
         return {'hh' : s_hh, 'vv' : s_vv, 'hv' : s_hv}
 
     def _tau(self, B):
-        # pdb.set_trace()
         return np.exp(-2 * B / np.cos(self.theta) * self.V2)
 
 
