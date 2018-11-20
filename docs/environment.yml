@@ -8,4 +8,5 @@ dependencies:
   - pip:
     - very-good-setuptools-git-version
     - numpy
+    - sphinxcontrib.bibtex
 
