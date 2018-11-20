@@ -7,4 +7,5 @@ dependencies:
   - pip
   - pip:
     - very-good-setuptools-git-version
+    - numpy
 
