@@ -1,17 +1,11 @@
 Technical documentation
 =======================
 
-dummy
+Core
 -------------------
-.. automodule:: dummy
+.. automodule:: sense.core
    :members:
    :undoc-members:
    :show-inheritance:
 
-dummy2
----------------------------------
-.. automodule:: dummy2
-   :members:
-   :noindex:
-   :undoc-members:
-   :show-inheritance:
+
