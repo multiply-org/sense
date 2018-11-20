@@ -16,9 +16,9 @@ import pdb
 
 # Helper functions for statistical parameters
 #--------------------------------------------
-def rmse(predictions, targets):
+def rmse_prediction(predictions, targets):
     """ calculation of RMSE """
-    return np.sqrt(((predictions - targets) ** 2).mean())
+    return np.sqrt(np.nanmean((predictions - targets) ** 2))
 
 def linregress(predictions, targets):
     """ Calculate a linear least-squares regression for two sets of measurements """
@@ -46,45 +46,70 @@ def read_agrometeo(path, file_name, extentio, sep=';', decimal=','):
 def filter_relativorbit(data, field, orbit1, orbit2=None, orbit3=None, orbit4=None):
     """ data filter for relativ orbits """
     output = data[[(check == orbit1 or check == orbit2 or check == orbit3 or check == orbit4) for check in data[(field,'relativeorbit')]]]
+    return output
+
+def smooth(x,window_len=11,window='hanning'):
+        if x.ndim != 1:
+                raise ValueError #, "smooth only accepts 1 dimension arrays."
+        if x.size < window_len:
+                raise ValueError #, "Input vector needs to be bigger than window size."
+        if window_len<3:
+                return x
+        if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+                raise ValueError #, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
+        s=np.r_[2*x[0]-x[window_len-1::-1],x,2*x[-1]-x[-1:-window_len:-1]]
+        if window == 'flat': #moving average
+                w=np.ones(window_len,'d')
+        else:
+                w=eval('np.'+window+'(window_len)')
+        y=np.convolve(w/w.sum(),s,mode='same')
+        return y[window_len:-window_len+1]
+
+def read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro):
+    # Read MNI data
+    df = read_mni_data(path, file_name, extension, field)
+
+    # Read agro-meteorological station
+    df_agro = read_agrometeo(path_agro, file_name_agro, extension_agro)
+
+    # filter for field
+    field_data = df.filter(like=field)
+
+    # filter for relativorbit
+    field_data_orbit = filter_relativorbit(field_data, field, 95, 168)
+    # field_data = field_data_orbit
+
+    # get rid of NaN values
+    parameter_nan = 'LAI'
+    field_data = field_data[~np.isnan(field_data.filter(like=parameter_nan).values)]
+
+    # available auxiliary data
+    theta_field = np.deg2rad(field_data.filter(like='theta'))
+    # theta_field[:] = 45
+    sm_field = field_data.filter(like='SM')
+    height_field = field_data.filter(like='Height')/100
+    lai_field = field_data.filter(like='LAI')
+    vwc_field = field_data.filter(like='VWC')
+    pol_field = field_data.filter(like='sigma_sentinel_'+pol)
+    return df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field
+
 
 ### Data preparation ###
 #-----------------------------------------------------------------
 # storage information
-path = '/media/tweiss/Daten'
-file_name = 'multi' # theta needs to be changed to for norm multi
+path = '/media/tweiss/Daten/new_data'
+file_name = 'multi_10_neu' # theta needs to be changed to for norm multi
 extension = '.csv'
 
 path_agro = '/media/nas_data/2017_MNI_campaign/field_data/meteodata/agrarmeteorological_station'
 file_name_agro = 'Eichenried_01012017_31122017_hourly'
 extension_agro = '.csv'
 
-field = '508'
+field = '508_med'
 pol = 'vv'
 
-# Read MNI data
-df = read_mni_data(path, file_name, extension, field)
+df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field = read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro)
 
-# Read agro-meteorological station
-df_agro = read_agrometeo(path_agro, file_name_agro, extension_agro)
-
-# filter for field
-field_data = df.filter(like=field)
-
-# filter for relativorbit
-field_data_orbit = filter_relativorbit(field_data, field, 117)
-
-# get rid of NaN values
-parameter_nan = 'LAI'
-field_data = field_data[~np.isnan(field_data.filter(like=parameter_nan).values)]
-
-# available auxiliary data
-theta_field = np.deg2rad(field_data.filter(like='theta'))
-# theta_field[:] = 45
-sm_field = field_data.filter(like='SM')
-height_field = field_data.filter(like='Height')/100
-lai_field = field_data.filter(like='LAI')
-vwc_field = field_data.filter(like='VWC')
-pol_field = field_data.filter(like='sigma_sentinel_'+pol)
 #-----------------------------------------------------------------
 
 ### Settings SenSe module ###
@@ -96,9 +121,9 @@ surface = 'Oh92'
 # surface = 'Dubois95'
 # surface = 'WaterCloud'
 # surface = 'I2EM'
-canopy = 'turbid_isotropic'
+# canopy = 'turbid_isotropic'
 # canopy = 'turbid_rayleigh'
-# canopy = 'water_cloud'
+canopy = 'water_cloud'
 
 models = {'surface': surface, 'canopy': canopy}
 
@@ -112,8 +137,8 @@ freq = 5.405
 #----------------
 C_hh = 0
 D_hh = 0
-C_hv = -13.19637386
-D_hv = 14.01814786
+C_hv = -22.5
+D_hv = 4
 C_vv = -13.18550537
 D_vv = 14.07248098
 V2 = lai_field.values.flatten()
@@ -124,14 +149,27 @@ clay = 0.08
 sand = 0.12
 bulk = 1.5
 # vh 508
-s = 0.0075
+s = 0.0105
 # vv 508
 # s = 0.006
 
+#### Oh94
+#----------------
+clay = 0.08
+sand = 0.12
+bulk = 1.5
+# vh 508
+# s = 0.0105
+# vv 508
+s = 0.004
+
+
 #### Dubois
 #----------------
+# s = 0.02
 
-
+# 0.2 bis 2 cm
+# 0.002 bis 0.02
 #### I2EM
 #----------------
 l = 0.05
@@ -142,10 +180,10 @@ l = 0.05
 #----------------
 A_hh = 0
 B_hh = 0
-A_hv = -0.46323766
-B_hv = -0.07569564
+A_hv = 0.029
+B_hv = 0.0013
 A_vv = 0.0029
-B_vv = 0.33
+B_vv = 0.13
 V1 = lai_field.values.flatten()
 V2 = V2 # initialize in surface model
 
@@ -153,11 +191,19 @@ V2 = V2 # initialize in surface model
 #---------------
 coef = 1.
 # vv 508
-omega = 0.0373
+omega = 0.073
+omega = 0.0115
 # vh 508
-# omega = 0.010536135
-
+# omega = 0.00700536135
+# omega = 0.01
 #-----------------------------------------------------------------
+coef = np.array([1.3049759594490773, 1.3576043954537875, 1.4232976334377132, 1.3049759594490773, 1.3576043954537875, 1.4232976334377132, 1.7782919500465684, 1.733123264611746, 1.6215813800059236, 1.6331751903309639, 1.7020891369639437, 1.7027871407248381, 1.6726685367479532, 1.5368931894404281, 1.5263712325750893, 1.5638181847747787, 1.5522039531868772, 1.552666795621743, 1.5959772195148028, 1.6761201509234722, 1.7362298766332911, 1.7572690058158227, 1.8300164487363679, 2.1024204414569567, 2.1276792351300502, 2.1692039547066218, 2.150240409077651, 2.07183425491246, 2.2235663110523074, 2.4587510731321376, 1.5877720867350895, 1.5614279318334556, 1.502814892180685, 1.0452071567160555, 1.0398166749918674, 1.2539406144876399, 1.2914845175654008, 0.97355472859396586, 0.95165720812289256, 0.771026097265329, 0.67382998382510662, 0.61503285495792948, 0.5875134371892029, 0.52948216941062254, 0.51301487182491101, 0.5214633452626537, 0.46280916791746446, 0.42143484311665386, 0.41399348294995431, 0.34602550470822835, 0.32553967751289786, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557])
+
+# coef = np.array([1.7832343233732022, 1.8035630639649372, 1.7985431220194465, 1.7832343233732022, 1.8035630639649372, 1.7985431220194465, 1.9685097517689421, 1.8300935617111225, 1.6679897589732398, 1.6834414960656523, 1.7524753410684002, 1.7340743100977514, 1.6542873893435326, 1.6139258279676987, 1.5740520603194212, 1.6398073680903695, 1.5987495750995122, 1.6152747540714192, 1.6750188275964608, 1.8164512950599163, 1.8758096729494207, 1.9088167372413214, 1.9709499970279523, 2.24901211905871, 2.228877681569398, 2.2327144338590692, 2.2152906003561381, 2.0575870319430765, 2.2266147701629411, 2.4072127460478887, 1.6483573376411498, 1.7268223825588045, 1.647681070735074, 1.2021062945175873, 1.3280455521677268, 1.7474189529301625, 1.7167538607658286, 1.1248619363351156, 1.0598543574821582, 0.9407394402527155, 0.90181243965542301, 0.78107638794045253, 0.71559618483331788, 0.63473421692057674, 0.59965805612579914, 0.59298511173929558, 0.49242880459685978, 0.45777508050835369, 0.44908692434242337, 0.38566248379787632, 0.35532376030435975, 0.38245262192872487, 0.33286629740354112, 0.31237373613887798, 0.28073835029372252, 0.22732545606061058, 0.18926391915599108, 0.18154690375071802, 0.13876688378927751, 0.13876688378927751, 0.13876688378927751, 0.13876688378927751])
+
+coef = np.array([ 1.3049759594490773, 1.3576043954537875, 1.4232976334377132, 1.7782919500465684, 1.733123264611746, 1.6215813800059236, 1.6331751903309639, 1.7020891369639437, 1.7027871407248381, 1.6726685367479532, 1.5368931894404281, 1.5263712325750893, 1.5638181847747787, 1.5522039531868772, 1.552666795621743, 1.5959772195148028, 1.6761201509234722, 1.7362298766332911, 1.7572690058158227, 1.8300164487363679, 2.1024204414569567, 2.1276792351300502, 2.1692039547066218, 2.150240409077651, 2.07183425491246, 2.2235663110523074, 2.4587510731321376, 1.5877720867350895, 1.5614279318334556, 1.502814892180685, 1.0452071567160555, 1.0398166749918674, 1.2539406144876399, 1.2914845175654008, 0.97355472859396586, 0.95165720812289256, 0.771026097265329, 0.67382998382510662, 0.61503285495792948, 0.5875134371892029, 0.52948216941062254, 0.51301487182491101, 0.5214633452626537, 0.46280916791746446, 0.42143484311665386, 0.41399348294995431, 0.34602550470822835, 0.32553967751289786, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557, 0.34558232750256557])
+
+
 
 ### Optimization ###
 #-----------------------------------------------------------------
@@ -166,8 +212,9 @@ def solve_fun(VALS):
     for i in range(len(var_opt)):
         dic[var_opt[i]] = VALS[i]
 
-    ke = dic['coef'] * np.sqrt(dic['lai'])
+    # ke = dic['coef'] * np.sqrt(dic['lai'])
     # ke = dic['coef'] * np.sqrt(dic['vwc'])
+    ke=1
     dic['ke'] = ke
 
     # surface
@@ -184,21 +231,46 @@ def solve_fun(VALS):
 def fun_opt(VALS):
     return(np.sum(np.square(solve_fun(VALS)-dic['pol_value'])))
 
-n = 9
+n = 7
 aaa = []
+
+
 for i in range(len(pol_field.values.flatten())-n+1):
 
-    dic = {"mv":sm_field.values.flatten()[i:i+n], "C_hh":C_hh, "C_vv":C_vv, "D_hh":D_hh, "D_vv":D_vv, "C_hv":C_hv, "D_hv":D_hv, "V2":V2[i:i+n], "s":s, "clay":clay, "sand":sand, "f":freq, "bulk":bulk, "l":l, "canopy":canopy, "d":height_field.values.flatten()[i:i+n], "V1":V1[i:i+n], "A_hh":A_hh, "B_hh":B_hh, "A_vv":A_vv, "B_vv":B_vv, "A_hv":A_hv, "B_hv":B_hv, "lai":lai_field.values.flatten()[i:i+n], "vwc":vwc_field.values.flatten()[i:i+n], "pol_value":pol_field.values.flatten()[i:i+n], "theta":theta_field.values.flatten()[i:i+n], "omega": omega}
+    dic = {"mv":sm_field.values.flatten()[i:i+n], "C_hh":C_hh, "C_vv":C_vv, "D_hh":D_hh, "D_vv":D_vv, "C_hv":C_hv, "D_hv":D_hv, "V2":V2[i:i+n], "s":s, "clay":clay, "sand":sand, "f":freq, "bulk":bulk, "l":l, "canopy":canopy, "d":height_field.values.flatten()[i:i+n], "V1":V1[i:i+n], "A_hh":A_hh, "B_hh":B_hh, "A_vv":A_vv, "B_vv":B_vv, "A_hv":A_hv, "B_hv":B_hv, "lai":lai_field.values.flatten()[i:i+n], "vwc":vwc_field.values.flatten()[i:i+n], "pol_value":pol_field.values.flatten()[i:i+n], "theta":theta_field.values.flatten()[i:i+n], "omega": omega, "coef": coef[i:i+n]}
 
-    var_opt = ['coef']
-    guess = [0.1]
-    bounds = [(0.,20.5)]
+    # var_opt = ['coef']
+    # guess = [0.1]
+    # bounds = [(0.,5.5)]
 
+    # var_opt = ['omega']
+    # guess = [0.1]
+    # bounds = [(0.,5.5)]
+
+    # var_opt = ['s', 'coef', 'omega']
+    # guess = [0.01, 0.1, 0.01]
+    # bounds = [(0.001,0.03),(0.,2.5),(0.001,0.1)]
+
+    var_opt = ['C_hv', 'D_hv']
+    guess = [-13, 14]
+    bounds = [(-200.,100.),(-200.,400.)]
+
+    var_opt = ['A_vv', 'B_vv']
+
+    try:
+        guess = [res.x[0], res.x[1]]
+    except:
+        guess = [0.005, 0.09]
+    # bounds = [(0.000,5.),(0.001,5.)]
+    bounds = [(guess[0]*0.75, guess[0]*1.25), (guess[1]*0.75, guess[1]*1.25)]
+    bounds = [(guess[0]*0.9, guess[0]*1.1), (guess[1]*0.75, guess[1]*1.25)]
     # var_opt = ['coef', 'omega']
     # guess = [0.1, 0.22]
-    # bounds = [(0.,0.5),(0.,0.5)]
-    # method = 'L-BFGS-B'
-    res = minimize(fun_opt,guess,bounds=bounds)
+    # bounds = [(0.,5.5),(0.00001,0.2)]
+    method = 'L-BFGS-B'
+    # method = 'trust-exact'
+    # pdb.set_trace()
+    res = minimize(fun_opt,guess,bounds=bounds, method=method)
 
     fun_opt(res.x)
     aaa.append(res.x)
@@ -206,42 +278,71 @@ for i in range(len(pol_field.values.flatten())-n+1):
 
 ### preparation for optimized run
 #-----------------------------------------------------------------
-n = np.int(np.floor(n/2))
+def data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_field, vwc_field, pol):
+    n = np.int(np.floor(n/2))
 
-field_data = field_data.drop(field_data.index[-n:])
-field_data = field_data.drop(field_data.index[0:n])
-theta_field = theta_field.drop(theta_field.index[-n:])
-theta_field = theta_field.drop(theta_field.index[0:n])
+    if n > 0:
+        field_data = field_data.drop(field_data.index[-n:])
+        field_data = field_data.drop(field_data.index[0:n])
+        theta_field = theta_field.drop(theta_field.index[-n:])
+        theta_field = theta_field.drop(theta_field.index[0:n])
 
-sm_field = field_data.filter(like='SM')
-height_field = field_data.filter(like='Height')/100
-lai_field = field_data.filter(like='LAI')
-vwc_field = field_data.filter(like='VWC')
+    sm_field = field_data.filter(like='SM')
+    height_field = field_data.filter(like='Height')/100
+    lai_field = field_data.filter(like='LAI')
+    vwc_field = field_data.filter(like='VWC')
 
-vv_field = field_data.filter(like='sigma_sentinel_vv')
-vh_field = field_data.filter(like='sigma_sentinel_vh')
+    vv_field = field_data.filter(like='sigma_sentinel_vv')
+    vh_field = field_data.filter(like='sigma_sentinel_vh')
 
-pol_field = field_data.filter(like='sigma_sentinel_'+pol)
+    pol_field = field_data.filter(like='sigma_sentinel_'+pol)
+    return field_data, theta_field, sm_field, height_field, lai_field, vwc_field, vv_field, vh_field, pol_field
+
+field_data, theta_field, sm_field, height_field, lai_field, vwc_field, vv_field, vh_field, pol_field = data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_field, vwc_field, pol)
 
 
-coef = [el[0] for el in aaa]
-# omega = [el[1] for el in aaa]
+# coef = [el[0] for el in aaa]
+# omega = [el[0] for el in aaa]
 
+# s = np.array([el[0] for el in aaa])
+# coef = [el[1] for el in aaa]
+# omega = [el[2] for el in aaa]
+
+# C_vv = np.array([el[0] for el in aaa])
+# D_vv = np.array([el[1] for el in aaa])
+
+C_hv = np.array([el[0] for el in aaa])
+D_hv = np.array([el[1] for el in aaa])
+
+A_vv = np.array([el[0] for el in aaa])
+B_vv = np.array([el[1] for el in aaa])
+
+# coef = np.array([1.7832343233732022, 1.8035630639649372, 1.7985431220194465, 1.9685097517689421, 1.8300935617111225, 1.6679897589732398, 1.6834414960656523, 1.7524753410684002, 1.7340743100977514, 1.6542873893435326, 1.6139258279676987, 1.5740520603194212, 1.6398073680903695, 1.5987495750995122, 1.6152747540714192, 1.6750188275964608, 1.8164512950599163, 1.8758096729494207, 1.9088167372413214, 1.9709499970279523, 2.24901211905871, 2.228877681569398, 2.2327144338590692, 2.2152906003561381, 2.0575870319430765, 2.2266147701629411, 2.4072127460478887, 1.6483573376411498, 1.7268223825588045, 1.647681070735074, 1.2021062945175873, 1.3280455521677268, 1.7474189529301625, 1.7167538607658286, 1.1248619363351156, 1.0598543574821582, 0.9407394402527155, 0.90181243965542301, 0.78107638794045253, 0.71559618483331788, 0.63473421692057674, 0.59965805612579914, 0.59298511173929558, 0.49242880459685978, 0.45777508050835369, 0.44908692434242337, 0.38566248379787632, 0.35532376030435975, 0.38245262192872487, 0.33286629740354112, 0.31237373613887798, 0.28073835029372252, 0.22732545606061058, 0.18926391915599108, 0.18154690375071802, 0.13876688378927751])
 
 ke = coef * np.sqrt(lai_field.values.flatten())
-# ke = coef * np.exp(vwc_field.values.flatten())
+# ke = coef * np.sqrt(vwc_field.values.flatten())
+# ke = smooth(ke, 11)
+# pdb.set_trace()
 #-----------------------------------------------------------------
 
 ### Run SenSe module
 #-----------------------------------------------------------------
 
-soil = Soil(mv=sm_field.values.flatten(), C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, C_hv=C_hv, D_hv=D_hv, V2=lai_field.values.flatten(), s=s, clay=clay, sand=sand, f=freq, bulk=bulk, l=l)
+V1 = lai_field.values.flatten()
+V2 = lai_field.values.flatten()
+
+soil = Soil(mv=sm_field.values.flatten(), C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, C_hv=C_hv, D_hv=D_hv, V2=V2, s=s, clay=clay, sand=sand, f=freq, bulk=bulk, l=l)
 
 
-can = OneLayer(canopy=canopy, ke_h=ke, ke_v=ke, d=height_field.values.flatten(), ks_h = omega*ke, ks_v = omega*ke, V1=lai_field.values.flatten(), V2=lai_field.values.flatten(), A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv, A_hv=A_hv, B_hv=B_hv)
+can = OneLayer(canopy=canopy, ke_h=ke, ke_v=ke, d=height_field.values.flatten(), ks_h = omega*ke, ks_v = omega*ke, V1=V1, V2=V2, A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv, A_hv=A_hv, B_hv=B_hv)
 
 S = model.RTModel(surface=soil, canopy=can, models=models, theta=theta_field.values.flatten(), freq=freq)
 S.sigma0()
+
+if field == '508_med':
+    S.__dict__['stot'][pol[::-1]][13:16] = np.nan
+
+
 #-----------------------------------------------------------------
 
 ### Plotting
@@ -282,8 +383,8 @@ ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth
 
 ax.plot(date, 10*np.log10(S.__dict__['s0g'][pol[::-1]]), 'rs-', label=pol+' s0g')
 ax.plot(date, 10*np.log10(S.__dict__['s0c'][pol[::-1]]), 'cs-', label=pol+' s0c')
-ax.plot(date, 10*np.log10(S.__dict__['s0cgt'][pol[::-1]]), 'ms-', label=pol+' s0cgt')
-ax.plot(date, 10*np.log10(S.__dict__['s0gcg'][pol[::-1]]), 'ys-', label=pol+' s0gcg')
+# ax.plot(date, 10*np.log10(S.__dict__['s0cgt'][pol[::-1]]), 'ms-', label=pol+' s0cgt')
+# ax.plot(date, 10*np.log10(S.__dict__['s0gcg'][pol[::-1]]), 'ys-', label=pol+' s0gcg')
 ax.plot(date, 10*np.log10(S.__dict__['stot'][pol[::-1]]), 'C1s-', label=S.models['surface']+ ' + ' +  S.models['canopy'] + ' Pol: ' + pol)
 ax.legend()
 ax.legend(loc=2, fontsize=12)
@@ -296,12 +397,25 @@ ax.legend(loc=2, fontsize=12)
 # ax2.tick_params(labelsize=12)
 # ax2.set_ylabel('LAI [m$^3$/m$^3$]', fontsize=15, color='green')
 ax3 = ax.twinx()
-ax3.set_ylabel('VWC [kg/m$^2$]', fontsize=15, color='blue')
+# ax3.set_ylabel('VWC [kg/m$^2$]', fontsize=15, color='blue')
 ax3.tick_params(labelsize=12)
-lns2 = ax3.plot(date,ke, color='blue', label='Volume extinction coefficient')
-ax3.set_ylabel('Volume extinction coefficient [Np/m]', fontsize=15)
-ax3.yaxis.label.set_color('blue')
-ax3.plot(date,ke, 'bs-')
+# lns2 = ax3.plot(date,ke, color='blue', label='Volume extinction coefficient')
+# ax3.set_ylabel('Volume extinction coefficient [Np/m]', fontsize=15)
+# ax3.yaxis.label.set_color('blue')
+# ax3.plot(date,ke, 'bs-')
+# ax3.plot(date,coef, 'ys-')
+
+# ax3.plot(date[field_data[(field,'relativeorbit')]==44], ke[field_data[(field,'relativeorbit')]==44], 'ys', label=44)
+# ax3.plot(date[field_data[(field,'relativeorbit')]==117], ke[field_data[(field,'relativeorbit')]==117], 'ms', label=117)
+# ax3.plot(date[field_data[(field,'relativeorbit')]==95], ke[field_data[(field,'relativeorbit')]==95], 'rs', label=95)
+# ax3.plot(date[field_data[(field,'relativeorbit')]==168], ke[field_data[(field,'relativeorbit')]==168], 'gs', label=168)
+# ax.plot(10*np.log10(pol_field[field_data[(field,'relativeorbit')]==117]), 'ms-', label=117)
+# ax.plot(10*np.log10(pol_field[field_data[(field,'relativeorbit')]==95]), 'rs-', label=95)
+# ax.plot(10*np.log10(pol_field[field_data[(field,'relativeorbit')]==168]), 'gs-', label=168)
+
+
+
+# ax3.plot(date,omega, 'ms-')
 # ax4 = ax2.twinx()
 # ax4.plot(sm_field)
 # ax4.set_ylim([-0.8,0.4])
@@ -311,8 +425,8 @@ ax3.plot(date,ke, 'bs-')
 
 ax6 = ax.twinx()
 ax6.tick_params(labelsize=12)
-lns1 = ax6.plot(vwc_field, 'g', label='VWC')
-ax6.set_ylabel('VWC [kg/m2]', fontsize=15, color='green')
+lns1 = ax6.plot(lai_field, 'g', label='VWC')
+ax6.set_ylabel('LAI [/]', fontsize=15, color='green')
 ax6.yaxis.label.set_color('green')
 ax6.spines['right'].set_position(('outward', 60))
 
@@ -357,19 +471,126 @@ ax.set_xlim(['2017-03-20', '2017-07-15'])
 
 slope, intercept, r_value, p_value, std_err = scipy.stats.linregress((pol_field.values.flatten()), (S.__dict__['stot'][pol[::-1]]))
 slope1, intercept1, r_value1, p_value1, std_err1 = scipy.stats.linregress(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__dict__['stot'][pol[::-1]]))
-rmse = rmse(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__dict__['stot'][pol[::-1]]))
+rmse = rmse_prediction(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__dict__['stot'][pol[::-1]]))
 
 plt.title('Winter Wheat, R2 = ' + str(r_value) + ' RMSE = ' + str(rmse))
 plt.savefig('/media/tweiss/Daten/plots/plot_'+field+'_'+pol+'_'+file_name+'_'+S.models['surface']+'_'+S.models['canopy'])
 plt.close()
 
 
-
 pdb.set_trace()
+
+# ke = np.array([ 2.06326886,  1.91916714,  1.77367103,  1.63778107,  1.528702  ,
+#         1.46604885,  1.46253485,  1.51355678,  1.60051594,  1.69869197,
+#         1.78462896,  1.84024706,  1.85075172,  1.81189095,  1.73825148,
+#         1.65175839,  1.57682432,  1.53837552,  1.55148688,  1.62179581,
+#         1.74169402,  1.88590305,  2.02932635,  2.14663887,  2.21078958,
+#         2.21276201,  2.15754037,  2.06089996,  1.94999007,  1.84663998,
+#         1.76203146,  1.69526738,  1.6298006 ,  1.55229176,  1.46191104,
+#         1.36124346,  1.25958148,  1.16926533,  1.09563444,  1.03437644,
+#         0.97349969,  0.90241684,  0.81561377,  0.71172699,  0.59756655,
+#         0.48556321,  0.3871495 ,  0.30900663,  0.25081152,  0.20861753,
+#         0.17712126,  0.14943961,  0.12191173,  0.09462769,  0.06671757,
+#         0.03757646])
+# C_vv = np.array([-14.62021844, -14.52733754,  -8.07220241, -14.74143993,
+#        -18.42041188, -14.36304957, -14.28024849, -14.3342842 ,
+#        -14.36442823, -14.23628017,  -9.25625934,  -8.19237892,
+#         -5.28158493,  -3.87026981,  -3.45584735,  -3.98370261,
+#        -13.18425257, -12.98646127, -12.92703971, -13.04234691,
+#        -11.15906684, -11.15784566, -11.21186719, -11.5211018 ,
+#        -11.308834  , -11.19225841, -11.31916709, -10.84673287,
+#        -10.91784905, -12.99996228, -12.99996436, -12.99997557,
+#        -12.99998938, -13.        , -12.99998988, -12.99998993,
+#        -13.        , -13.        , -12.99998724, -12.99998405,
+#        -12.99997974, -12.99997786, -12.99997295, -12.99996202,
+#         -3.49934522,  -3.92486052,  -3.58896055,  -3.51956506,
+#         -4.75782816,  -3.60160112,  -2.99269511,   0.        ,
+#          0.        ,  -0.66617689,   0.        ,   0.        ])
+# D_vv = np.array([ 13.13525467,  13.19322237,   1.37567403,  13.0790507 ,
+#         20.        ,  13.26559902,  13.2763212 ,  13.22528786,
+#         13.18792346,  13.20142913,   6.05404625,   4.56398804,
+#          0.15512926,   0.        ,   0.        ,   1.21771858,
+#         20.        ,  20.        ,  20.        ,  20.        ,
+#         15.00725676,  14.96739904,  14.93159261,  14.77349734,
+#         14.88187912,  14.94077546,  14.86500294,  15.02409645,
+#         14.98689808,  14.00002015,  14.00001897,  14.00001251,
+#         14.00000518,  14.        ,  14.00000513,  14.00000512,
+#         14.        ,  14.        ,  14.00000639,  14.0000078 ,
+#         14.0000097 ,  14.00000997,  14.0000117 ,  14.00001584,
+#         17.71884858,  17.59050298,  20.        ,  20.        ,
+#         20.        ,  18.39475902,  18.06682578,  12.51381333,
+#         13.69266562,  15.42614678,  11.33772659,  11.57183062])
+aaa = []
+bbb = []
+ccc = []
+
+field_plot = ['508_high', '508_low', '508_med']
+i = 0
+colors = ['ks', 'ys', 'ms', 'rs']
+
+for field in field_plot:
+    df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field = read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro)
+    field_data, theta_field, sm_field, height_field, lai_field, vwc_field, vv_field, vh_field, pol_field = data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_field, vwc_field, pol)
+
+    soil = Soil(mv=sm_field.values.flatten(), C_hh=C_hh, C_vv=C_vv, D_hh=D_hh, D_vv=D_vv, C_hv=C_hv, D_hv=D_hv, V2=lai_field.values.flatten(), s=s, clay=clay, sand=sand, f=freq, bulk=bulk, l=l)
+
+
+    can = OneLayer(canopy=canopy, ke_h=ke, ke_v=ke, d=height_field.values.flatten(), ks_h = omega*ke, ks_v = omega*ke, V1=lai_field.values.flatten(), V2=lai_field.values.flatten(), A_hh=A_hh, B_hh=B_hh, A_vv=A_vv, B_vv=B_vv, A_hv=A_hv, B_hv=B_hv)
+
+    S = model.RTModel(surface=soil, canopy=can, models=models, theta=theta_field.values.flatten(), freq=freq)
+    S.sigma0()
+
+    plt.plot(10*np.log10(pol_field.values.flatten()),10*np.log10(S.__dict__['stot'][pol[::-1]]), colors[i], label=field)
+
+    aaa = np.append(aaa, 10*np.log10(pol_field.values.flatten()))
+    bbb = np.append(bbb, 10*np.log10(S.__dict__['stot'][pol[::-1]]))
+    i = i+1
+
+
+plt.ylabel(surface + ' ' + canopy + ' [dB]')
+plt.xlabel('Sentinel-1 [dB]')
+plt.legend()
+x = np.linspace(np.min(10*np.log10(pol_field.values.flatten()))-2, np.max(10*np.log10(pol_field.values.flatten()))+2, 16)
+plt.plot(x,x)
+www = rmse_prediction(aaa, bbb)
+# slope, intercept, r_value, p_value, std_err = linregress(aaa[~np.isnan(bbb)], bbb[~np.isnan(bbb)])
+plt.title(pol+' ' + field + ' ' + surface + ' ' + canopy + 'R2='+str(r_value)+' RMSE='+str(www))
+plt.savefig('/media/tweiss/Daten/plots/scatterplot_fertig_'+field+'_'+pol+'_'+file_name+'_'+S.models['surface']+'_'+S.models['canopy'])
+pdb.set_trace()
+
 
 
 # delete
 #----------------------------------------------------------------
+
+
+
+
+high_s = 10*np.log10(pol_field.values.flatten())
+high_c = 10*np.log10(S.__dict__['stot'][pol[::-1]])
+low_s = 10*np.log10(pol_field.values.flatten())
+low_c = 10*np.log10(S.__dict__['stot'][pol[::-1]])
+med_s = 10*np.log10(pol_field.values.flatten())
+med_c = 10*np.log10(S.__dict__['stot'][pol[::-1]])
+
+aaa = np.append(high_c, low_c)
+aaa = np.append(aaa, med_c)
+bbb = np.append(high_s, low_s)
+bbb = np.append(bbb, med_s)
+rm = rmse_prediction(aaa, bbb)
+
+plt.plot(high_s, high_c, 'ks', label='508 High')
+plt.plot(low_s, low_c, 'ys', label='508 Low')
+plt.plot(med_s, med_c, 'ms', label='508 Medium')
+plt.plot(x,x)
+plt.xlabel('Backscatter Sentinel-1 [dB]')
+plt.ylabel('Backscatter predicted [dB]')
+plt.title('Winter Wheat 508, RMSE = 1.17, WCM WCM VH')
+plt.legend()
+plt.savefig('/media/tweiss/Daten/paper_plot/scatterplot_WCM_WCM_508_vh')
+
+
+
 
 # A_vv = 0.0029
 # B_vv = 0.33
