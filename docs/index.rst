@@ -1,4 +1,4 @@
-sar-pre-processing
+SenSE
 ==================
 
 .. toctree::
@@ -14,5 +14,5 @@ sar-pre-processing
     :caption: anything else
 
     Authors <authors>
-    Changelog <changes>
+    Change log <changes>
 
