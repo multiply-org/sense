@@ -245,6 +245,8 @@ class I2EM(SurfaceScatter):
         Shdw = self._calc_shadow_cross()
 
         svh = self._integrate_xpol(rvh)
+        print(svh*Shdw)
+
         return svh*Shdw
 
 
@@ -335,6 +337,22 @@ class I2EM(SurfaceScatter):
         acc = np.exp(-2.* ks2 *cs2) /(16. * np.pi)
         VH = 4. * acc * Fvh * vhmnsum * r
         y = VH * sha
+        # print('y =',y)
+        # print('r =',r)
+        # print('phi =',phi)
+        # print('sp = 1, exp15')
+        # print('xx =  ??? 1')
+        # print('ks2 =',ks2)
+        # print('cs =',cs)
+        # print('s =',s)
+        # print('kl2 =',kl2)
+        # print('L =', self.l)
+        # print('er =',eps)
+        # print('rss =',rss)
+        # print('rvh =',rvh)
+        # print('n_spec =',nspec)
+        # print(y)
+        # pdb.set_trace()
         return y
 
 

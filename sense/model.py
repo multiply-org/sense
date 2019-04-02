@@ -7,7 +7,7 @@ from . surface import Oh92, Oh04, Dubois95, WaterCloudSurface, I2EM
 from . util import f2lam
 from . scatterer import ScatIso, ScatRayleigh
 from . core import Reflectivity
-
+import pdb
 class Model(object):
     def __init__(self, **kwargs):
         self.theta = kwargs.get('theta', None)
@@ -308,6 +308,7 @@ class Ground(object):
         self._set_models(RT_s, RT_c)
         if self.S.surface != 'WaterCloud':
             self._calc_rho()
+        self.RT_s = RT_s
 
     def _check(self, RT_s, RT_c):
         valid_surface = ['Oh92', 'Oh04', 'Dubois95', 'WaterCloud', 'I2EM']
@@ -325,7 +326,7 @@ class Ground(object):
             self.rt_s = Dubois95(self.S.eps, self.S.ks, self.theta, lam=f2lam(self.freq))
         elif RT_s == 'I2EM':
             # assert False, 'Implementation not completed'
-            self.rt_s = I2EM(self.freq, self.S.eps, self.S.s, self.S.l, self.theta, xpol=True, auto=False)
+            self.rt_s = I2EM(self.freq, self.S.eps, self.S.s, self.S.l, self.theta, xpol=False, auto=False)
         elif RT_s == 'WaterCloud':
             if (self.S.C_hh is None) or (self.S.D_hh is None) or (self.S.C_vv is None) or (self.S.D_vv is None) or (self.S.C_hv is None) or (self.S.D_hv is None):
                 assert False, 'Empirical surface parameters for Water Cloud model not specified!'
@@ -426,7 +427,9 @@ class Ground(object):
         s_hh = self.rt_s.hh*t_h*t_h
         s_vv = self.rt_s.vv*t_v*t_v
 
-        if self.rt_s.hv is None:
+        if self.RT_s == 'I2EM':
+            s_hv = None
+        elif self.rt_s.hv is None:
             s_hv = None
         else:
             s_hv = self.rt_s.hv*t_v*t_h
