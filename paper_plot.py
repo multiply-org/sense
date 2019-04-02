@@ -113,7 +113,7 @@ def solve_fun(VALS):
 
     S = model.RTModel(surface=soil, canopy=can, models=models, theta=dic['theta'], freq=dic['f'])
     S.sigma0()
-    # pdb.set_trace()
+
     return S.__dict__['stot'][pol[::-1]]
 
 def fun_opt(VALS):
@@ -146,7 +146,7 @@ def data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_f
 ### Data preparation ###
 #-----------------------------------------------------------------
 # storage information
-path = '/media/tweiss/Daten'
+path = '/media/tweiss/Daten/new_data'
 file_name = 'multi_10_neu' # theta needs to be changed to for norm multi
 extension = '.csv'
 
@@ -164,14 +164,14 @@ df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, 
 #-----------------------------------------------------------------
 ## Choose models
 #---------------
-# surface = 'Oh92'
+surface = 'Oh92'
 # surface = 'Oh04'
 # surface = 'Dubois95'
 # surface = 'WaterCloud'
-surface = 'I2EM'
-canopy = 'turbid_isotropic'
+# surface = 'I2EM'
+# canopy = 'turbid_isotropic'
 # canopy = 'turbid_rayleigh'
-# canopy = 'water_cloud'
+canopy = 'water_cloud'
 
 models = {'surface': surface, 'canopy': canopy}
 
@@ -216,8 +216,6 @@ omega = 0.027
 # omega = 0.0115
 # IEM
 l = 0.01
-
-
 #-----------------------------------------------------------------
 
 ### Run SenSe module
@@ -236,20 +234,17 @@ canopy = 'turbid_isotropic'
 models = {'surface': surface, 'canopy': canopy}
 
 opt_mod = 'time invariant'
-opt_mod = 'time variant'
+# opt_mod = 'time variant'
 
 surface_list = ['Oh92', 'Oh04', 'Dubois95', 'WaterCloud']
-surface_list = ['Oh92', 'Oh04', 'WaterCloud']
 canopy_list = ['turbid_isotropic', 'water_cloud']
-
-surface_list = ['I2EM']
-canopy_list = ['turbid_isotropic']
 
 fig, ax = plt.subplots(figsize=(20, 10))
 # plt.title('Winter Wheat')
 plt.ylabel('Backscatter [dB]', fontsize=15)
+plt.xlabel('Date', fontsize=15)
 plt.tick_params(labelsize=12)
-ax.set_ylim([-25,-10])
+ax.set_ylim([-22.5,-7.5])
 
 colormaps = ['Greens', 'Purples', 'Blues', 'Oranges', 'Reds', 'Greys', 'pink', 'bone']
 j = 0
@@ -265,7 +260,7 @@ for k in surface_list:
         sand = 0.12
         bulk = 1.5
         # s = 0.0105
-        # s = 0.007
+        s = 0.007
 
         C_hh = 0
         D_hh = 0
@@ -288,26 +283,9 @@ for k in surface_list:
         V2 = V1 # initialize in surface model
         coef = 1.
         omega = 0.027
-        # omega = 0.005
+        # omega = 0.0115
         # IEM
-        l = 0.006
-
-
-        s = 0.002
-        # vv Baghdadi modification
-        l = 1.281 + 0.134 * (np.sin(0.19 * np.mean(theta_field.values)) ** (-1.59)) * s * 100.
-        l = l / 100.
-
-        l = 0.0186
-        l = 0.0210
-
-
-        # l = 1.281 + 0.134 * (np.sin(0.19 * (theta_field.values)) ** (-1.59)) * s * 100.
-        # l = l / 100.
-        print(l)
-        print(s)
-        # hv Baghdadi modification
-        # l = 0.9157 + 1.2289 * np.sin(0.1543 * theta_field) ** -0.3139 * s
+        l = 0.01
 
 
         surface = k
@@ -403,8 +381,8 @@ for k in surface_list:
 
                 fun_opt(res.x)
 
-                for ii in range(len(res.x)):
-                    aaa[ii].append(res.x[ii])
+                for j in range(len(res.x)):
+                    aaa[j].append(res.x[j])
 
             field_data, theta_field, sm_field, height_field, lai_field, vwc_field, vv_field, vh_field, pol_field = data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_field, vwc_field, pol)
             V1 = lai_field.values.flatten()
@@ -429,25 +407,39 @@ for k in surface_list:
 
         colormap = plt.get_cmap(colormaps[j])
         colors = [colormap(jj) for jj in np.linspace(0.35, 1., 4)]
-        # pdb.set_trace()
 
-        ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth=3)
-        ax.plot(date, 10*np.log10(S.__dict__['s0g'][pol[::-1]]), color=colors[0], marker='s', linestyle='--', label=pol+' s0g')
-        ax.plot(date, 10*np.log10(S.__dict__['s0c'][pol[::-1]]), color=colors[1], marker='s', linestyle='--', label=pol+' s0c')
-        ax.plot(date, 10*np.log10(S.__dict__['s0cgt'][pol[::-1]]), 'ms-', label=pol+' s0cgt')
-        ax.plot(date, 10*np.log10(S.__dict__['s0gcg'][pol[::-1]]), 'ys-', label=pol+' s0gcg')
+        # ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth=3)
+        # ax.plot(date, 10*np.log10(S.__dict__['s0g'][pol[::-1]]), color=colors[0], marker='s', linestyle='--', label=pol+' s0g')
+        # ax.plot(date, 10*np.log10(S.__dict__['s0c'][pol[::-1]]), color=colors[1], marker='s', linestyle='--', label=pol+' s0c')
+        # ax.plot(date, 10*np.log10(S.__dict__['s0cgt'][pol[::-1]]), 'ms-', label=pol+' s0cgt')
+        # ax.plot(date, 10*np.log10(S.__dict__['s0gcg'][pol[::-1]]), 'ys-', label=pol+' s0gcg')
 
         mask = ~np.isnan(pol_field.values.flatten()) & ~np.isnan(S.__dict__['stot'][pol[::-1]])
         slope, intercept, r_value, p_value, std_err = scipy.stats.linregress((pol_field.values.flatten()[mask]), (S.__dict__['stot'][pol[::-1]][mask]))
         slope1, intercept1, r_value1, p_value1, std_err1 = scipy.stats.linregress(10*np.log10(pol_field.values.flatten())[mask], 10*np.log10(S.__dict__['stot'][pol[::-1]])[mask])
         rmse = rmse_prediction(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__dict__['stot'][pol[::-1]]))
 
-        ax.plot(date, 10*np.log10(S.__dict__['stot'][pol[::-1]]), color=colors[2], marker='s', label=S.models['surface']+ ' + ' +  S.models['canopy'] + ' Pol: ' + pol + '; RMSE: ' + str(rmse)[0:4] + '; R2: ' + str(r_value)[0:4] + ' ' + str(r_value1)[0:4])
+        if k == 'Oh92':
+            colors = 'blue'
+        elif k == 'Oh04':
+            colors = 'red'
+        elif k == 'Dubois95':
+            colors = 'orange'
+        elif k == 'WaterCloud':
+            colors = 'purple'
+
+
+        if kk == 'turbid_isotropic':
+
+            ax.plot(date, 10*np.log10(S.__dict__['stot'][pol[::-1]]), color=colors, marker='s', linestyle='dashed', label=S.models['surface']+ ' + ' +  S.models['canopy'] + ' Pol: ' + pol + '; RMSE: ' + str(rmse)[0:4] + '; R2: ' + str(r_value)[0:4] + ' ' + str(r_value1)[0:4])
+        else:
+            ax.plot(date, 10*np.log10(S.__dict__['stot'][pol[::-1]]), color=colors, marker='s', label=S.models['surface']+ ' + ' +  S.models['canopy'] + ' Pol: ' + pol + '; RMSE: ' + str(rmse)[0:4] + '; R2: ' + str(r_value)[0:4] + ' ' + str(r_value1)[0:4])
+
         j = j+1
 ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth=3)
 plt.legend()
 plt.title('Winter Wheat 508')
-plt.savefig('/media/tweiss/Daten/neu/vv_'+opt_mod)
+plt.savefig('/media/tweiss/Daten/plots/vv_'+opt_mod)
 pdb.set_trace()
 
 colors = ['gs-', 'rs-', ]
