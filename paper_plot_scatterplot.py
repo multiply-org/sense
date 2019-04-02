@@ -113,7 +113,7 @@ def solve_fun(VALS):
 
     S = model.RTModel(surface=soil, canopy=can, models=models, theta=dic['theta'], freq=dic['f'])
     S.sigma0()
-    # pdb.set_trace()
+
     return S.__dict__['stot'][pol[::-1]]
 
 def fun_opt(VALS):
@@ -146,7 +146,7 @@ def data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_f
 ### Data preparation ###
 #-----------------------------------------------------------------
 # storage information
-path = '/media/tweiss/Daten'
+path = '/media/tweiss/Daten/new_data'
 file_name = 'multi_10_neu' # theta needs to be changed to for norm multi
 extension = '.csv'
 
@@ -164,14 +164,14 @@ df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, 
 #-----------------------------------------------------------------
 ## Choose models
 #---------------
-# surface = 'Oh92'
+surface = 'Oh92'
 # surface = 'Oh04'
 # surface = 'Dubois95'
 # surface = 'WaterCloud'
-surface = 'I2EM'
-canopy = 'turbid_isotropic'
+# surface = 'I2EM'
+# canopy = 'turbid_isotropic'
 # canopy = 'turbid_rayleigh'
-# canopy = 'water_cloud'
+canopy = 'water_cloud'
 
 models = {'surface': surface, 'canopy': canopy}
 
@@ -216,8 +216,6 @@ omega = 0.027
 # omega = 0.0115
 # IEM
 l = 0.01
-
-
 #-----------------------------------------------------------------
 
 ### Run SenSe module
@@ -236,7 +234,7 @@ canopy = 'turbid_isotropic'
 models = {'surface': surface, 'canopy': canopy}
 
 opt_mod = 'time invariant'
-opt_mod = 'time variant'
+# opt_mod = 'time variant'
 
 surface_list = ['Oh92', 'Oh04', 'Dubois95', 'WaterCloud']
 surface_list = ['Oh92', 'Oh04', 'WaterCloud']
@@ -245,11 +243,12 @@ canopy_list = ['turbid_isotropic', 'water_cloud']
 surface_list = ['I2EM']
 canopy_list = ['turbid_isotropic']
 
-fig, ax = plt.subplots(figsize=(20, 10))
-# plt.title('Winter Wheat')
-plt.ylabel('Backscatter [dB]', fontsize=15)
-plt.tick_params(labelsize=12)
-ax.set_ylim([-25,-10])
+
+# fig, ax = plt.subplots(figsize=(20, 10))
+# # plt.title('Winter Wheat')
+# plt.ylabel('Backscatter [dB]', fontsize=15)
+# plt.tick_params(labelsize=12)
+# ax.set_ylim([-30,-15])
 
 colormaps = ['Greens', 'Purples', 'Blues', 'Oranges', 'Reds', 'Greys', 'pink', 'bone']
 j = 0
@@ -260,194 +259,223 @@ colors = [colormap(jj) for jj in np.linspace(0.35, 1., 3)]
 for k in surface_list:
 
     for kk in canopy_list:
-        df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field = read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro)
-        clay = 0.08
-        sand = 0.12
-        bulk = 1.5
-        # s = 0.0105
-        # s = 0.007
 
-        C_hh = 0
-        D_hh = 0
-        C_hv = -22.5
-        D_hv = 4
-        C_vv = -14.609339
-        D_vv = 12.884086
+        ESUS = ['508_high', '508_low', '508_med']
+        xxx = np.array([])
+        yyy = np.array([])
+        j = 0
+        for kkk in ESUS:
+            field = kkk
 
-        ### Canopy
-        # Water Cloud (A, B, V1, V2, theta)
-        # SSRT (coef, omega, theta)
-        #-----------------------------------
-        A_hh = 0
-        B_hh = 0
-        A_hv = 0.029
-        B_hv = 0.0013
-        A_vv = 0.0029
-        B_vv = 0.13
-        V1 = lai_field.values.flatten()
-        V2 = V1 # initialize in surface model
-        coef = 1.
-        omega = 0.027
-        # omega = 0.005
-        # IEM
-        l = 0.006
+            df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field = read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro)
+            clay = 0.08
+            sand = 0.12
+            bulk = 1.5
+            # s = 0.0105
+            s = 0.007
 
+            C_hh = 0
+            D_hh = 0
+            C_hv = -22.5
+            D_hv = 4
+            C_vv = -14.609339
+            D_vv = 12.884086
 
-        s = 0.002
-        # vv Baghdadi modification
-        l = 1.281 + 0.134 * (np.sin(0.19 * np.mean(theta_field.values)) ** (-1.59)) * s * 100.
-        l = l / 100.
-
-        l = 0.0186
-        l = 0.0210
-
-
-        # l = 1.281 + 0.134 * (np.sin(0.19 * (theta_field.values)) ** (-1.59)) * s * 100.
-        # l = l / 100.
-        print(l)
-        print(s)
-        # hv Baghdadi modification
-        # l = 0.9157 + 1.2289 * np.sin(0.1543 * theta_field) ** -0.3139 * s
+            ### Canopy
+            # Water Cloud (A, B, V1, V2, theta)
+            # SSRT (coef, omega, theta)
+            #-----------------------------------
+            A_hh = 0
+            B_hh = 0
+            A_hv = 0.029
+            B_hv = 0.0013
+            A_vv = 0.0029
+            B_vv = 0.13
+            V1 = lai_field.values.flatten()
+            V2 = V1 # initialize in surface model
+            coef = 1.
+            omega = 0.027
+            omega = 0.005
+            # IEM
+            l = 0.01
 
 
-        surface = k
-        canopy = kk
-        models = {'surface': surface, 'canopy': canopy}
+            surface = k
+            canopy = kk
+            models = {'surface': surface, 'canopy': canopy}
 
-        #### Optimization
-        #-----------------
+            #### Optimization
+            #-----------------
 
-        if opt_mod == 'time invariant':
+            if opt_mod == 'time invariant':
 
-            dic = {"mv":sm_field.values.flatten(), "C_hh":C_hh, "C_vv":C_vv, "D_hh":D_hh, "D_vv":D_vv, "C_hv":C_hv, "D_hv":D_hv, "s":s, "clay":clay, "sand":sand, "f":freq, "bulk":bulk, "l":l, "canopy":canopy, "d":height_field.values.flatten(), "V1":V1, "V2":V2, "A_hh":A_hh, "B_hh":B_hh, "A_vv":A_vv, "B_vv":B_vv, "A_hv":A_hv, "B_hv":B_hv, "lai":lai_field.values.flatten(), "vwc":vwc_field.values.flatten(), "pol_value":pol_field.values.flatten(), "theta":theta_field.values.flatten(), "omega": omega, "coef": coef}
+                dic = {"mv":sm_field.values.flatten(), "C_hh":C_hh, "C_vv":C_vv, "D_hh":D_hh, "D_vv":D_vv, "C_hv":C_hv, "D_hv":D_hv, "s":s, "clay":clay, "sand":sand, "f":freq, "bulk":bulk, "l":l, "canopy":canopy, "d":height_field.values.flatten(), "V1":V1, "V2":V2, "A_hh":A_hh, "B_hh":B_hh, "A_vv":A_vv, "B_vv":B_vv, "A_hv":A_hv, "B_hv":B_hv, "lai":lai_field.values.flatten(), "vwc":vwc_field.values.flatten(), "pol_value":pol_field.values.flatten(), "theta":theta_field.values.flatten(), "omega": omega, "coef": coef}
 
-            if canopy == 'turbid_isotropic':
-                var_opt = ['coef']
-                guess = [2.]
-                bounds = [(0.,5.5)]
-            elif surface == 'WaterCloud' and canopy == 'water_cloud':
-                var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv', 'C_vv', 'D_vv', 'C_hv', 'D_hv']
-                guess = [A_vv, B_vv, A_hv, B_hv, C_vv, D_vv, C_hv, D_hv]
-                bounds = [(0.,1), (0.,1), (0.,1), (0.,1), (-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
-            elif canopy == 'water_cloud':
-                var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv']
-                guess = [A_vv, B_vv, A_hv, B_hv]
-                bounds = [(0.,1), (0.,1), (0.,1), (0.,1)]
-
-            method = 'L-BFGS-B'
-
-            res = minimize(fun_opt,guess,bounds=bounds, method=method)
-
-            fun_opt(res.x)
-            aaa = res.x
-
-        if opt_mod == 'time variant':
-            aaa = [[],[],[],[],[],[],[],[],[],[],[],[]]
-            n=7
-
-            for i in range(len(pol_field.values.flatten())-n+1):
-
-                if type(coef) == float:
-                    dic = {"mv":sm_field.values.flatten()[i:i+n], "C_hh":C_hh, "C_vv":C_vv, "D_hh":D_hh, "D_vv":D_vv, "C_hv":C_hv, "D_hv":D_hv, "V2":V2[i:i+n], "s":s, "clay":clay, "sand":sand, "f":freq, "bulk":bulk, "l":l, "canopy":canopy, "d":height_field.values.flatten()[i:i+n], "V1":V1[i:i+n], "A_hh":A_hh, "B_hh":B_hh, "A_vv":A_vv, "B_vv":B_vv, "A_hv":A_hv, "B_hv":B_hv, "lai":lai_field.values.flatten()[i:i+n], "vwc":vwc_field.values.flatten()[i:i+n], "pol_value":pol_field.values.flatten()[i:i+n], "theta":theta_field.values.flatten()[i:i+n], "omega": omega, "coef": coef}
-                else:
-                    dic = {"mv":sm_field.values.flatten()[i:i+n], "C_hh":C_hh, "C_vv":C_vv, "D_hh":D_hh, "D_vv":D_vv, "C_hv":C_hv, "D_hv":D_hv, "V2":V2[i:i+n], "s":s, "clay":clay, "sand":sand, "f":freq, "bulk":bulk, "l":l, "canopy":canopy, "d":height_field.values.flatten()[i:i+n], "V1":V1[i:i+n], "A_hh":A_hh, "B_hh":B_hh, "A_vv":A_vv, "B_vv":B_vv, "A_hv":A_hv, "B_hv":B_hv, "lai":lai_field.values.flatten()[i:i+n], "vwc":vwc_field.values.flatten()[i:i+n], "pol_value":pol_field.values.flatten()[i:i+n], "theta":theta_field.values.flatten()[i:i+n], "omega": omega, "coef": coef[i:i+n]}
-
-                if canopy == 'turbid_isotropic' and surface == 'WaterCloud':
-                    var_opt = ['coef', 'C_vv', 'D_vv', 'C_hv', 'D_hv']
-                    guess = [1., C_vv, D_vv, C_hv, D_hv]
-                    bounds = [(0.1,5.5), (-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
-                elif canopy == 'turbid_isotropic':
+                if canopy == 'turbid_isotropic':
                     var_opt = ['coef']
-                    guess = [0.1]
-                    bounds = [(0.,2)]
+                    guess = [2.]
+                    bounds = [(0.,5.5)]
                 elif surface == 'WaterCloud' and canopy == 'water_cloud':
-                    # var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv', 'C_vv', 'D_vv', 'C_hv', 'D_hv']
-                    # guess = [A_vv, B_vv, A_hv, B_hv, C_vv, D_vv, C_hv, D_hv]
-                    # bounds = [(0.,1), (guess[1]*0.55, guess[1]*1.55), (0.,1), (guess[3]*0.75, guess[3]*1.25), (-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
-                    var_opt = ['C_vv', 'D_vv', 'C_hv', 'D_hv']
-                    guess = [C_vv, D_vv, C_hv, D_hv]
-                    bounds = [(-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
+                    var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv', 'C_vv', 'D_vv', 'C_hv', 'D_hv']
+                    guess = [A_vv, B_vv, A_hv, B_hv, C_vv, D_vv, C_hv, D_hv]
+                    bounds = [(0.,1), (0.,1), (0.,1), (0.,1), (-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
                 elif canopy == 'water_cloud':
                     var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv']
                     guess = [A_vv, B_vv, A_hv, B_hv]
                     bounds = [(0.,1), (0.,1), (0.,1), (0.,1)]
 
-                # var_opt = ['omega']
-                # guess = [0.1]
-                # bounds = [(0.,5.5)]
-
-                # var_opt = ['s', 'coef', 'omega']
-                # guess = [0.01, 0.1, 0.01]
-                # bounds = [(0.001,0.03),(0.,2.5),(0.001,0.1)]
-
-                # var_opt = ['C_hv', 'D_hv']
-                # guess = [-13, 14]
-                # bounds = [(-200.,100.),(-200.,400.)]
-
-                # var_opt = ['A_vv', 'B_vv']
-
-                # try:
-                #     guess = [res.x[0], res.x[1]]
-                # except:
-                #     guess = [0.005, 0.09]
-                # # bounds = [(0.000,5.),(0.001,5.)]
-                # bounds = [(guess[0]*0.75, guess[0]*1.25), (guess[1]*0.75, guess[1]*1.25)]
-                # bounds = [(guess[0]*0.9, guess[0]*1.1), (guess[1]*0.75, guess[1]*1.25)]
-                # var_opt = ['coef', 'omega']
-                # guess = [0.1, 0.22]
-                # bounds = [(0.,5.5),(0.00001,0.2)]
                 method = 'L-BFGS-B'
-                # method = 'trust-exact'
 
                 res = minimize(fun_opt,guess,bounds=bounds, method=method)
 
                 fun_opt(res.x)
+                aaa = res.x
 
-                for ii in range(len(res.x)):
-                    aaa[ii].append(res.x[ii])
+            if opt_mod == 'time variant':
+                aaa = [[],[],[],[],[],[],[],[],[],[],[],[]]
+                n=7
 
-            field_data, theta_field, sm_field, height_field, lai_field, vwc_field, vv_field, vh_field, pol_field = data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_field, vwc_field, pol)
-            V1 = lai_field.values.flatten()
-            V2 = V1 # initialize in surface model
+                for i in range(len(pol_field.values.flatten())-n+1):
 
-        #-----------------------------------------------------------------
+                    if type(coef) == float:
+                        dic = {"mv":sm_field.values.flatten()[i:i+n], "C_hh":C_hh, "C_vv":C_vv, "D_hh":D_hh, "D_vv":D_vv, "C_hv":C_hv, "D_hv":D_hv, "V2":V2[i:i+n], "s":s, "clay":clay, "sand":sand, "f":freq, "bulk":bulk, "l":l, "canopy":canopy, "d":height_field.values.flatten()[i:i+n], "V1":V1[i:i+n], "A_hh":A_hh, "B_hh":B_hh, "A_vv":A_vv, "B_vv":B_vv, "A_hv":A_hv, "B_hv":B_hv, "lai":lai_field.values.flatten()[i:i+n], "vwc":vwc_field.values.flatten()[i:i+n], "pol_value":pol_field.values.flatten()[i:i+n], "theta":theta_field.values.flatten()[i:i+n], "omega": omega, "coef": coef}
+                    else:
+                        dic = {"mv":sm_field.values.flatten()[i:i+n], "C_hh":C_hh, "C_vv":C_vv, "D_hh":D_hh, "D_vv":D_vv, "C_hv":C_hv, "D_hv":D_hv, "V2":V2[i:i+n], "s":s, "clay":clay, "sand":sand, "f":freq, "bulk":bulk, "l":l, "canopy":canopy, "d":height_field.values.flatten()[i:i+n], "V1":V1[i:i+n], "A_hh":A_hh, "B_hh":B_hh, "A_vv":A_vv, "B_vv":B_vv, "A_hv":A_hv, "B_hv":B_hv, "lai":lai_field.values.flatten()[i:i+n], "vwc":vwc_field.values.flatten()[i:i+n], "pol_value":pol_field.values.flatten()[i:i+n], "theta":theta_field.values.flatten()[i:i+n], "omega": omega, "coef": coef[i:i+n]}
 
-        for i in range(len(res.x)):
-            exec('%s = %s' % (var_opt[i],aaa[i]))
+                    if canopy == 'turbid_isotropic' and surface == 'WaterCloud':
+                        var_opt = ['coef', 'C_vv', 'D_vv', 'C_hv', 'D_hv']
+                        guess = [1., C_vv, D_vv, C_hv, D_hv]
+                        bounds = [(0.1,5.5), (-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
+                    elif canopy == 'turbid_isotropic':
+                        var_opt = ['coef']
+                        guess = [0.1]
+                        bounds = [(0.,2)]
+                    elif surface == 'WaterCloud' and canopy == 'water_cloud':
+                        # var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv', 'C_vv', 'D_vv', 'C_hv', 'D_hv']
+                        # guess = [A_vv, B_vv, A_hv, B_hv, C_vv, D_vv, C_hv, D_hv]
+                        # bounds = [(0.,1), (guess[1]*0.55, guess[1]*1.55), (0.,1), (guess[3]*0.75, guess[3]*1.25), (-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
+                        var_opt = ['C_vv', 'D_vv', 'C_hv', 'D_hv']
+                        guess = [C_vv, D_vv, C_hv, D_hv]
+                        bounds = [(-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
+                    elif canopy == 'water_cloud':
+                        var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv']
+                        guess = [A_vv, B_vv, A_hv, B_hv]
+                        bounds = [(0.,1), (0.,1), (0.,1), (0.,1)]
 
-        ke = coef * np.sqrt(lai_field.values.flatten())
-        # ke = smooth(ke, 11)
+                    # var_opt = ['omega']
+                    # guess = [0.1]
+                    # bounds = [(0.,5.5)]
 
-        soil = Soil(mv=sm_field.values.flatten(), C_hh=np.array(C_hh), C_vv=np.array(C_vv), D_hh=np.array(D_hh), D_vv=np.array(D_vv), C_hv=np.array(C_hv), D_hv=np.array(D_hv), s=s, clay=clay, sand=sand, f=freq, bulk=bulk, l=l)
+                    # var_opt = ['s', 'coef', 'omega']
+                    # guess = [0.01, 0.1, 0.01]
+                    # bounds = [(0.001,0.03),(0.,2.5),(0.001,0.1)]
 
-        can = OneLayer(canopy=canopy, ke_h=ke, ke_v=ke, d=height_field.values.flatten(), ks_h = omega*ke, ks_v = omega*ke, V1=np.array(V1), V2=np.array(V2), A_hh=np.array(A_hh), B_hh=np.array(B_hh), A_vv=np.array(A_vv), B_vv=np.array(B_vv), A_hv=np.array(A_hv), B_hv=np.array(B_hv))
+                    # var_opt = ['C_hv', 'D_hv']
+                    # guess = [-13, 14]
+                    # bounds = [(-200.,100.),(-200.,400.)]
 
-        S = model.RTModel(surface=soil, canopy=can, models=models, theta=theta_field.values.flatten(), freq=freq)
-        S.sigma0()
+                    # var_opt = ['A_vv', 'B_vv']
+
+                    # try:
+                    #     guess = [res.x[0], res.x[1]]
+                    # except:
+                    #     guess = [0.005, 0.09]
+                    # # bounds = [(0.000,5.),(0.001,5.)]
+                    # bounds = [(guess[0]*0.75, guess[0]*1.25), (guess[1]*0.75, guess[1]*1.25)]
+                    # bounds = [(guess[0]*0.9, guess[0]*1.1), (guess[1]*0.75, guess[1]*1.25)]
+                    # var_opt = ['coef', 'omega']
+                    # guess = [0.1, 0.22]
+                    # bounds = [(0.,5.5),(0.00001,0.2)]
+                    method = 'L-BFGS-B'
+                    # method = 'trust-exact'
+
+                    res = minimize(fun_opt,guess,bounds=bounds, method=method)
+
+                    fun_opt(res.x)
+
+                    for ii in range(len(res.x)):
+                        aaa[ii].append(res.x[ii])
+
+                field_data, theta_field, sm_field, height_field, lai_field, vwc_field, vv_field, vh_field, pol_field = data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_field, vwc_field, pol)
+                V1 = lai_field.values.flatten()
+                V2 = V1 # initialize in surface model
+
+            #-----------------------------------------------------------------
+
+            for i in range(len(res.x)):
+                exec('%s = %s' % (var_opt[i],aaa[i]))
+
+            ke = coef * np.sqrt(lai_field.values.flatten())
+            # ke = smooth(ke, 11)
+
+            soil = Soil(mv=sm_field.values.flatten(), C_hh=np.array(C_hh), C_vv=np.array(C_vv), D_hh=np.array(D_hh), D_vv=np.array(D_vv), C_hv=np.array(C_hv), D_hv=np.array(D_hv), s=s, clay=clay, sand=sand, f=freq, bulk=bulk, l=l)
+
+            can = OneLayer(canopy=canopy, ke_h=ke, ke_v=ke, d=height_field.values.flatten(), ks_h = omega*ke, ks_v = omega*ke, V1=np.array(V1), V2=np.array(V2), A_hh=np.array(A_hh), B_hh=np.array(B_hh), A_vv=np.array(A_vv), B_vv=np.array(B_vv), A_hv=np.array(A_hv), B_hv=np.array(B_hv))
+
+            S = model.RTModel(surface=soil, canopy=can, models=models, theta=theta_field.values.flatten(), freq=freq)
+            S.sigma0()
 #-----------------------------------------------------------------
-        date = field_data.index
 
-        colormap = plt.get_cmap(colormaps[j])
-        colors = [colormap(jj) for jj in np.linspace(0.35, 1., 4)]
-        # pdb.set_trace()
+            # Scatterplot
+            #------------
+            color_scatter = ['blue', 'red', 'black']
 
-        ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth=3)
-        ax.plot(date, 10*np.log10(S.__dict__['s0g'][pol[::-1]]), color=colors[0], marker='s', linestyle='--', label=pol+' s0g')
-        ax.plot(date, 10*np.log10(S.__dict__['s0c'][pol[::-1]]), color=colors[1], marker='s', linestyle='--', label=pol+' s0c')
-        ax.plot(date, 10*np.log10(S.__dict__['s0cgt'][pol[::-1]]), 'ms-', label=pol+' s0cgt')
-        ax.plot(date, 10*np.log10(S.__dict__['s0gcg'][pol[::-1]]), 'ys-', label=pol+' s0gcg')
 
-        mask = ~np.isnan(pol_field.values.flatten()) & ~np.isnan(S.__dict__['stot'][pol[::-1]])
-        slope, intercept, r_value, p_value, std_err = scipy.stats.linregress((pol_field.values.flatten()[mask]), (S.__dict__['stot'][pol[::-1]][mask]))
-        slope1, intercept1, r_value1, p_value1, std_err1 = scipy.stats.linregress(10*np.log10(pol_field.values.flatten())[mask], 10*np.log10(S.__dict__['stot'][pol[::-1]])[mask])
-        rmse = rmse_prediction(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__dict__['stot'][pol[::-1]]))
+            plt.scatter(10*np.log10(pol_field.values.flatten()),10*np.log10(S.__dict__['stot'][pol[::-1]]), color=color_scatter[j], marker='s', label= field)
 
-        ax.plot(date, 10*np.log10(S.__dict__['stot'][pol[::-1]]), color=colors[2], marker='s', label=S.models['surface']+ ' + ' +  S.models['canopy'] + ' Pol: ' + pol + '; RMSE: ' + str(rmse)[0:4] + '; R2: ' + str(r_value)[0:4] + ' ' + str(r_value1)[0:4])
-        j = j+1
+            # plt.plot(10*np.log10(pol_field[field_data[(field,'relativeorbit')]==44]),10*np.log10(S.__dict__['stot'][pol[::-1]][field_data[(field,'relativeorbit')]==44]), 'ys', label=44)
+            # plt.plot(10*np.log10(pol_field[field_data[(field,'relativeorbit')]==117]),10*np.log10(S.__dict__['stot'][pol[::-1]][field_data[(field,'relativeorbit')]==117]), 'ms', label=117)
+            # plt.plot(10*np.log10(pol_field[field_data[(field,'relativeorbit')]==95]),10*np.log10(S.__dict__['stot'][pol[::-1]][field_data[(field,'relativeorbit')]==95]), 'rs', label=95)
+            # plt.plot(10*np.log10(pol_field[field_data[(field,'relativeorbit')]==168]),10*np.log10(S.__dict__['stot'][pol[::-1]][field_data[(field,'relativeorbit')]==168]), 'gs', label=168)
+
+
+
+
+
+            # date = field_data.index
+
+            # colormap = plt.get_cmap(colormaps[j])
+            # colors = [colormap(jj) for jj in np.linspace(0.35, 1., 4)]
+            # # pdb.set_trace()
+
+            # # ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth=3)
+            # # ax.plot(date, 10*np.log10(S.__dict__['s0g'][pol[::-1]]), color=colors[0], marker='s', linestyle='--', label=pol+' s0g')
+            # # ax.plot(date, 10*np.log10(S.__dict__['s0c'][pol[::-1]]), color=colors[1], marker='s', linestyle='--', label=pol+' s0c')
+            # # ax.plot(date, 10*np.log10(S.__dict__['s0cgt'][pol[::-1]]), 'ms-', label=pol+' s0cgt')
+            # # ax.plot(date, 10*np.log10(S.__dict__['s0gcg'][pol[::-1]]), 'ys-', label=pol+' s0gcg')
+
+            # mask = ~np.isnan(pol_field.values.flatten()) & ~np.isnan(S.__dict__['stot'][pol[::-1]])
+            # slope, intercept, r_value, p_value, std_err = scipy.stats.linregress((pol_field.values.flatten()[mask]), (S.__dict__['stot'][pol[::-1]][mask]))
+            # slope1, intercept1, r_value1, p_value1, std_err1 = scipy.stats.linregress(10*np.log10(pol_field.values.flatten())[mask], 10*np.log10(S.__dict__['stot'][pol[::-1]])[mask])
+            # rmse = rmse_prediction(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__dict__['stot'][pol[::-1]]))
+
+            # ax.plot(date, 10*np.log10(S.__dict__['stot'][pol[::-1]]), color=colors[2], marker='s', label=S.models['surface']+ ' + ' +  S.models['canopy'] + ' Pol: ' + pol + '; RMSE: ' + str(rmse)[0:4] + '; R2: ' + str(r_value)[0:4] + ' ' + str(r_value1)[0:4])
+            j = j+1
+
+            xxx = np.append(xxx, pol_field.values.flatten())
+            yyy = np.append(yyy, S.__dict__['stot'][pol[::-1]])
+        mask = ~np.isnan(xxx) & ~np.isnan(yyy)
+        slope, intercept, r_value, p_value, std_err = scipy.stats.linregress((xxx[mask]), (yyy[mask]))
+        slope1, intercept1, r_value1, p_value1, std_err1 = scipy.stats.linregress(10*np.log10(xxx)[mask], 10*np.log10(yyy)[mask])
+        rmse = rmse_prediction(10*np.log10(xxx), 10*np.log10(yyy))
+
+
+
+
+        plt.legend()
+        plt.title(field+'_'+pol+'_'+S.models['surface']+'_'+S.models['canopy']+'; RMSE: ' + str(rmse)[0:4] + '; R2: ' + str(r_value)[0:4] + ' ' + str(r_value1)[0:4])
+        x = np.linspace(np.min(10*np.log10(pol_field.values.flatten()))-2, np.max(10*np.log10(pol_field.values.flatten()))+2, 16)
+        plt.plot(x,x)
+        plt.savefig('/media/tweiss/Daten/plots/scatterplot_'+field+'_'+pol+'_'+file_name+'_'+S.models['surface']+'_'+S.models['canopy']+'_'+opt_mod)
+        plt.close()
+
+pdb.set_trace()
+
+
 ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth=3)
 plt.legend()
 plt.title('Winter Wheat 508')
-plt.savefig('/media/tweiss/Daten/neu/vv_'+opt_mod)
+plt.savefig('/media/tweiss/Daten/plots/vv_'+opt_mod)
 pdb.set_trace()
 
 colors = ['gs-', 'rs-', ]
