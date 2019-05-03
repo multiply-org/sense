@@ -105,7 +105,7 @@ path_agro = '/media/nas_data/2017_MNI_campaign/field_data/meteodata/agrarmeteoro
 file_name_agro = 'Eichenried_01012017_31122017_hourly'
 extension_agro = '.csv'
 
-field = '508_med'
+field = '508_high'
 pol = 'vv'
 
 df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field = read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro)
@@ -116,11 +116,11 @@ df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, 
 #-----------------------------------------------------------------
 ## Choose models
 #---------------
-surface = 'Oh92'
+# surface = 'Oh92'
 # surface = 'Oh04'
 # surface = 'Dubois95'
 # surface = 'WaterCloud'
-# surface = 'I2EM'
+surface = 'I2EM'
 # canopy = 'turbid_isotropic'
 # canopy = 'turbid_rayleigh'
 canopy = 'water_cloud'
@@ -161,7 +161,7 @@ bulk = 1.5
 # vh 508
 # s = 0.0105
 # vv 508
-s = 0.004
+s = 0.0015
 
 
 #### Dubois
@@ -172,7 +172,7 @@ s = 0.004
 # 0.002 bis 0.02
 #### I2EM
 #----------------
-l = 0.05
+l = 0.018
 
 ### Canopy
 #----------
