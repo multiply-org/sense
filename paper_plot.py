@@ -70,7 +70,8 @@ def read_data(path, file_name, extension, field, path_agro, file_name_agro, exte
     df = read_mni_data(path, file_name, extension, field)
 
     # Read agro-meteorological station
-    df_agro = read_agrometeo(path_agro, file_name_agro, extension_agro)
+    #df_agro = read_agrometeo(path_agro, file_name_agro, extension_agro)
+    df_agro=0
 
     # filter for field
     field_data = df.filter(like=field)
@@ -146,7 +147,7 @@ def data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_f
 ### Data preparation ###
 #-----------------------------------------------------------------
 # storage information
-path = '/media/tweiss/Daten/new_data'
+path = '/media/wodan/Volume/Arbeit'
 file_name = 'multi_10_neu' # theta needs to be changed to for norm multi
 extension = '.csv'
 
@@ -234,7 +235,7 @@ canopy = 'turbid_isotropic'
 models = {'surface': surface, 'canopy': canopy}
 
 opt_mod = 'time invariant'
-# opt_mod = 'time variant'
+opt_mod = 'time variant'
 
 surface_list = ['Oh92', 'Oh04', 'Dubois95', 'WaterCloud']
 canopy_list = ['turbid_isotropic', 'water_cloud']
@@ -439,7 +440,7 @@ for k in surface_list:
 ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth=3)
 plt.legend()
 plt.title('Winter Wheat 508')
-plt.savefig('/media/tweiss/Daten/plots/vv_'+opt_mod)
+plt.savefig('/media/wodan/Volume/Arbeit/vv_'+opt_mod)
 pdb.set_trace()
 
 colors = ['gs-', 'rs-', ]
@@ -706,7 +707,7 @@ plt.plot(x,x)
 www = rmse_prediction(aaa, bbb)
 # slope, intercept, r_value, p_value, std_err = linregress(aaa[~np.isnan(bbb)], bbb[~np.isnan(bbb)])
 plt.title(pol+' ' + field + ' ' + surface + ' ' + canopy + 'R2='+str(r_value)+' RMSE='+str(www))
-plt.savefig('/media/tweiss/Daten/plots/scatterplot_fertig_'+field+'_'+pol+'_'+file_name+'_'+S.models['surface']+'_'+S.models['canopy'])
+plt.savefig('/media/wodan/Volume/Arbeit/scatterplot_fertig_'+field+'_'+pol+'_'+file_name+'_'+S.models['surface']+'_'+S.models['canopy'])
 pdb.set_trace()
 
 
