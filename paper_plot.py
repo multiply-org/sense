@@ -12,6 +12,7 @@ from sense import model
 import scipy.stats
 from scipy.optimize import minimize
 import pdb
+import datetime
 
 
 # Helper functions for statistical parameters
@@ -28,7 +29,23 @@ def linregress(predictions, targets):
 def read_mni_data(path, file_name, extention, field, sep=';'):
     """ read MNI campaign data """
     df = pd.io.parsers.read_csv(os.path.join(path, file_name + extension), header=[0, 1], sep=sep)
-    df = df.set_index(pd.to_datetime(df[field]['date']))
+    pd.to_datetime(df[field]['date']).dt.date
+    df = df.set_index(pd.to_datetime(df[field]['date']).dt.date)
+    # X=np.loadtxt("http://www2.geog.ucl.ac.uk/~ucfajlg/LMU_LAI_doy2017.txt")
+    # xx = np.arange(1, 366)
+    # lai_interp = np.interp(xx, X[:,0], X[:,1])
+    # date_lai = datetime.date(2017, 1, 1) + datetime.timedelta(days=365)
+    # xxx = datetime.date(2017,1,1) + xx * datetime.timedelta(days=1)
+    # array = [[xxx],[lai_interp]]
+    # tuples = list(zip(*arrays))
+    # index = pd.MultiIndex.from_tuples(tuples, names=['first', 'second'])
+    # dd = pd.DataFrame({'date':xxx, 'S2':lai_interp})
+    # pdb.set_trace()
+    dd = pd.io.parsers.read_csv(os.path.join('/media/wodan/Volume/Arbeit/params_S2.csv'), header=[0, 1], sep=',')
+    ddd = dd.set_index(pd.to_datetime(dd['508_high']['date']).dt.date)
+    merge=pd.merge(df,ddd, how='inner', left_index=True, right_index=True)
+    df = merge
+    #df = df.set_index(pd.to_datetime(df[field]['date']))
     df = df.drop(df.filter(like='date'), axis=1)
     return df
 
@@ -77,8 +94,9 @@ def read_data(path, file_name, extension, field, path_agro, file_name_agro, exte
     field_data = df.filter(like=field)
 
     # filter for relativorbit
-    field_data_orbit = filter_relativorbit(field_data, field, 95, 168)
+    # field_data_orbit = filter_relativorbit(field_data, field, 95, 168)
     # field_data = field_data_orbit
+    field_data_orbit=0
 
     # get rid of NaN values
     parameter_nan = 'LAI'
@@ -88,11 +106,14 @@ def read_data(path, file_name, extension, field, path_agro, file_name_agro, exte
     theta_field = np.deg2rad(field_data.filter(like='theta'))
     # theta_field[:] = 45
     sm_field = field_data.filter(like='SM')
-    height_field = field_data.filter(like='Height')/100
-    lai_field = field_data.filter(like='LAI')
+    height_field2 = field_data.filter(like='Height')/100
+    height_field = field_data.filter(like='Cab')/100
+    lai_field2 = field_data.filter(like='LAI')
+    lai_field = field_data.filter(like='S2')
     vwc_field = field_data.filter(like='VWC')
     pol_field = field_data.filter(like='sigma_sentinel_'+pol)
-    return df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field
+    # pdb.set_trace()
+    return df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field, height_field2, lai_field2
 
 ### Optimization ###
 #-----------------------------------------------------------------
@@ -133,8 +154,9 @@ def data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_f
         theta_field = theta_field.drop(theta_field.index[0:n])
 
     sm_field = field_data.filter(like='SM')
-    height_field = field_data.filter(like='Height')/100
-    lai_field = field_data.filter(like='LAI')
+    # height_field = field_data.filter(like='Height')/100
+    height_field = field_data.filter(like='Cab')/100
+    lai_field = field_data.filter(like='S2')
     vwc_field = field_data.filter(like='VWC')
 
     vv_field = field_data.filter(like='sigma_sentinel_vv')
@@ -158,7 +180,25 @@ extension_agro = '.csv'
 field = '508_high'
 pol = 'vv'
 
-df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field = read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro)
+df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field, height_field2, lai_field2 = read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro)
+
+
+# X=np.loadtxt("http://www2.geog.ucl.ac.uk/~ucfajlg/LMU_Kaska_params.txt", delimiter=',')
+# xx = np.arange(1, 366)
+# lai_interp = np.interp(xx, X[:,0], X[:,1])
+# Cab_interp = np.interp(xx, X[:,0], X[:,2])
+# Cbrown_interp = np.interp(xx, X[:,0], X[:,3])
+
+
+# date_lai = datetime.date(2017, 1, 1) + datetime.timedelta(days=365)
+# xxx = datetime.date(2017,1,1) + xx * datetime.timedelta(days=1)
+
+# dd = pd.DataFrame({'date':xxx, 'LAI':lai_interp, 'Cab':Cab_interp, 'Cbrown':Cbrown_interp})
+# pdb.set_trace()
+
+
+
+
 #-----------------------------------------------------------------
 
 ### Settings SenSe module ###
@@ -214,7 +254,7 @@ V1 = lai_field.values.flatten()
 V2 = V1 # initialize in surface model
 coef = 1.
 omega = 0.027
-# omega = 0.0115
+omega = 0.115
 # IEM
 l = 0.01
 #-----------------------------------------------------------------
@@ -237,8 +277,8 @@ models = {'surface': surface, 'canopy': canopy}
 opt_mod = 'time invariant'
 opt_mod = 'time variant'
 
-surface_list = ['Oh92', 'Oh04', 'Dubois95', 'WaterCloud']
-canopy_list = ['turbid_isotropic', 'water_cloud']
+surface_list = ['Oh92']
+canopy_list = ['turbid_isotropic']
 
 fig, ax = plt.subplots(figsize=(20, 10))
 # plt.title('Winter Wheat')
@@ -256,7 +296,7 @@ colors = [colormap(jj) for jj in np.linspace(0.35, 1., 3)]
 for k in surface_list:
 
     for kk in canopy_list:
-        df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field = read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro)
+        df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field, height_field2, lai_field2 = read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro)
         clay = 0.08
         sand = 0.12
         bulk = 1.5
@@ -338,14 +378,14 @@ for k in surface_list:
                 elif canopy == 'turbid_isotropic':
                     var_opt = ['coef']
                     guess = [0.1]
-                    bounds = [(0.,2)]
+                    bounds = [(0.,5)]
                 elif surface == 'WaterCloud' and canopy == 'water_cloud':
-                    # var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv', 'C_vv', 'D_vv', 'C_hv', 'D_hv']
-                    # guess = [A_vv, B_vv, A_hv, B_hv, C_vv, D_vv, C_hv, D_hv]
-                    # bounds = [(0.,1), (guess[1]*0.55, guess[1]*1.55), (0.,1), (guess[3]*0.75, guess[3]*1.25), (-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
-                    var_opt = ['C_vv', 'D_vv', 'C_hv', 'D_hv']
-                    guess = [C_vv, D_vv, C_hv, D_hv]
-                    bounds = [(-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
+                    var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv', 'C_vv', 'D_vv', 'C_hv', 'D_hv']
+                    guess = [A_vv, B_vv, A_hv, B_hv, C_vv, D_vv, C_hv, D_hv]
+                    bounds = [(0.,5), (guess[1]*0.55, guess[1]*1.55), (0.,5), (guess[3]*0.75, guess[3]*1.25), (-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
+                    # var_opt = ['C_vv', 'D_vv', 'C_hv', 'D_hv']
+                    # guess = [C_vv, D_vv, C_hv, D_hv]
+                    # bounds = [(-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
                 elif canopy == 'water_cloud':
                     var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv']
                     guess = [A_vv, B_vv, A_hv, B_hv]
@@ -388,6 +428,7 @@ for k in surface_list:
             field_data, theta_field, sm_field, height_field, lai_field, vwc_field, vv_field, vh_field, pol_field = data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_field, vwc_field, pol)
             V1 = lai_field.values.flatten()
             V2 = V1 # initialize in surface model
+            # pdb.set_trace()
 
         #-----------------------------------------------------------------
 
@@ -440,8 +481,94 @@ for k in surface_list:
 ax.plot(10*np.log10(pol_field), 'ks-', label='Sentinel-1 Pol: ' + pol, linewidth=3)
 plt.legend()
 plt.title('Winter Wheat 508')
+
+ax1 = ax.twinx()
+
+B = height_field.values.flatten()*ke
+
+ax1.plot(pd.to_datetime(date), B*2, label='B')
+ax1.plot(pd.to_datetime(date), np.sqrt(lai_field.values.flatten()), label='LAI')
+ax1.plot(pd.to_datetime(date), coef, label='coef')
+ax1.plot(pd.to_datetime(date), ke, label='ke')
+ax1.plot(pd.to_datetime(date), height_field.values.flatten(), label='height')
+# ax1.plot(pd.to_datetime(date), A_vv, label='A')
+# ax1.plot(pd.to_datetime(date), B_vv, label='B')
+# ax1.plot(pd.to_datetime(date), C_vv, label='C')
+# ax1.plot(pd.to_datetime(date), D_vv, label='D')
+# ax1.plot(pd.to_datetime(dd.date),lai_interp*Cab_interp/20, label='lai*cab')
+
+# ax1.plot(pd.to_datetime(dd.date),lai_interp, label='lai')
+# ax1.plot(pd.to_datetime(dd.date),Cab_interp/10., label='cab')
+# ax1.plot(pd.to_datetime(dd.date),Cbrown_interp*10, label='cbrown')
+ax1.set_xlim(['2017-03-20', '2017-07-20'])
+ax.set_ylim([-25,-10])
+plt.legend()
 plt.savefig('/media/wodan/Volume/Arbeit/vv_'+opt_mod)
 pdb.set_trace()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 colors = ['gs-', 'rs-', ]
 
@@ -462,7 +589,7 @@ ax.plot(date, 10*np.log10(S.__dict__['s0c'][pol[::-1]]), 'cs-', label=pol+' s0c'
 ax.plot(date, 10*np.log10(S.__dict__['stot'][pol[::-1]]), 'C1s-', label=S.models['surface']+ ' + ' +  S.models['canopy'] + ' Pol: ' + pol)
 ax.legend()
 ax.legend(loc=2, fontsize=12)
-ax.set_ylim([-30,-5])
+ax.set_ylim([-35,-5])
 ax.set_xlim(['2017-03-20', '2017-07-20'])
 
 mask = ~np.isnan(pol_field.values.flatten()) & ~np.isnan(S.__dict__['stot'][pol[::-1]])
@@ -473,6 +600,39 @@ rmse = rmse_prediction(10*np.log10(pol_field.values.flatten()), 10*np.log10(S.__
 plt.title('Winter Wheat, R2 = ' + str(r_value) + ' RMSE = ' + str(rmse))
 
 pdb.set_trace()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #-----------------------------------------------------------------
 

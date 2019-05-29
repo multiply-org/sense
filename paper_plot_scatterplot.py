@@ -28,7 +28,13 @@ def linregress(predictions, targets):
 def read_mni_data(path, file_name, extention, field, sep=';'):
     """ read MNI campaign data """
     df = pd.io.parsers.read_csv(os.path.join(path, file_name + extension), header=[0, 1], sep=sep)
-    df = df.set_index(pd.to_datetime(df[field]['date']))
+    pd.to_datetime(df[field]['date']).dt.date
+    df = df.set_index(pd.to_datetime(df[field]['date']).dt.date)
+    # df = df.set_index(pd.to_datetime(df[field]['date']))
+    dd = pd.io.parsers.read_csv(os.path.join('/media/wodan/Volume/Arbeit/LAI.csv'), header=[0, 1], sep=',')
+    ddd = dd.set_index(pd.to_datetime(dd['508_high']['date']).dt.date)
+    merge=pd.merge(df,ddd, how='inner', left_index=True, right_index=True)
+    df = merge
     df = df.drop(df.filter(like='date'), axis=1)
     return df
 
@@ -70,14 +76,15 @@ def read_data(path, file_name, extension, field, path_agro, file_name_agro, exte
     df = read_mni_data(path, file_name, extension, field)
 
     # Read agro-meteorological station
-    df_agro = read_agrometeo(path_agro, file_name_agro, extension_agro)
-
+    # df_agro = read_agrometeo(path_agro, file_name_agro, extension_agro)
+    df_agro=0
     # filter for field
     field_data = df.filter(like=field)
 
     # filter for relativorbit
-    field_data_orbit = filter_relativorbit(field_data, field, 95, 168)
+    # field_data_orbit = filter_relativorbit(field_data, field, 95, 168)
     # field_data = field_data_orbit
+    field_data_orbit=0
 
     # get rid of NaN values
     parameter_nan = 'LAI'
@@ -88,7 +95,8 @@ def read_data(path, file_name, extension, field, path_agro, file_name_agro, exte
     # theta_field[:] = 45
     sm_field = field_data.filter(like='SM')
     height_field = field_data.filter(like='Height')/100
-    lai_field = field_data.filter(like='LAI')
+    lai_field2 = field_data.filter(like='LAI')
+    lai_field = field_data.filter(like='S2')
     vwc_field = field_data.filter(like='VWC')
     pol_field = field_data.filter(like='sigma_sentinel_'+pol)
     return df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field
@@ -146,7 +154,7 @@ def data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_f
 ### Data preparation ###
 #-----------------------------------------------------------------
 # storage information
-path = '/media/tweiss/Daten/new_data'
+path = '/media/wodan/Volume/Arbeit'
 file_name = 'multi_10_neu' # theta needs to be changed to for norm multi
 extension = '.csv'
 
@@ -158,6 +166,7 @@ field = '508_high'
 pol = 'vv'
 
 df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field = read_data(path, file_name, extension, field, path_agro, file_name_agro, extension_agro)
+
 #-----------------------------------------------------------------
 
 ### Settings SenSe module ###
@@ -234,14 +243,14 @@ canopy = 'turbid_isotropic'
 models = {'surface': surface, 'canopy': canopy}
 
 opt_mod = 'time invariant'
-# opt_mod = 'time variant'
+opt_mod = 'time variant'
 
 surface_list = ['Oh92', 'Oh04', 'Dubois95', 'WaterCloud']
 surface_list = ['Oh92', 'Oh04', 'WaterCloud']
 canopy_list = ['turbid_isotropic', 'water_cloud']
 
-surface_list = ['I2EM']
-canopy_list = ['turbid_isotropic']
+# surface_list = ['Oh92']
+# canopy_list = ['turbid_isotropic']
 
 
 # fig, ax = plt.subplots(figsize=(20, 10))
@@ -351,12 +360,12 @@ for k in surface_list:
                         guess = [0.1]
                         bounds = [(0.,2)]
                     elif surface == 'WaterCloud' and canopy == 'water_cloud':
-                        # var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv', 'C_vv', 'D_vv', 'C_hv', 'D_hv']
-                        # guess = [A_vv, B_vv, A_hv, B_hv, C_vv, D_vv, C_hv, D_hv]
-                        # bounds = [(0.,1), (guess[1]*0.55, guess[1]*1.55), (0.,1), (guess[3]*0.75, guess[3]*1.25), (-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
-                        var_opt = ['C_vv', 'D_vv', 'C_hv', 'D_hv']
-                        guess = [C_vv, D_vv, C_hv, D_hv]
-                        bounds = [(-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
+                        var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv', 'C_vv', 'D_vv', 'C_hv', 'D_hv']
+                        guess = [A_vv, B_vv, A_hv, B_hv, C_vv, D_vv, C_hv, D_hv]
+                        bounds = [(0.,1), (guess[1]*0.55, guess[1]*1.55), (0.,1), (guess[3]*0.75, guess[3]*1.25), (-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
+                        # var_opt = ['C_vv', 'D_vv', 'C_hv', 'D_hv']
+                        # guess = [C_vv, D_vv, C_hv, D_hv]
+                        # bounds = [(-20.,-1.), (1.,20.), (-20.,-1.), (1.,20.)]
                     elif canopy == 'water_cloud':
                         var_opt = ['A_vv', 'B_vv', 'A_hv', 'B_hv']
                         guess = [A_vv, B_vv, A_hv, B_hv]
@@ -455,6 +464,7 @@ for k in surface_list:
             xxx = np.append(xxx, pol_field.values.flatten())
             yyy = np.append(yyy, S.__dict__['stot'][pol[::-1]])
         mask = ~np.isnan(xxx) & ~np.isnan(yyy)
+        pdb.set_trace()
         slope, intercept, r_value, p_value, std_err = scipy.stats.linregress((xxx[mask]), (yyy[mask]))
         slope1, intercept1, r_value1, p_value1, std_err1 = scipy.stats.linregress(10*np.log10(xxx)[mask], 10*np.log10(yyy)[mask])
         rmse = rmse_prediction(10*np.log10(xxx), 10*np.log10(yyy))
