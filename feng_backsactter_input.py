@@ -188,14 +188,14 @@ date = pd.to_datetime(field_data.index)
 
 theta = field_data.filter(like='theta').values.flatten()
 
-theta = np.deg2rad(theta)
+theta_new = np.deg2rad(theta)
 
-LAI = field_data.filter(like='S2').values.flatten()
-LAI = field_data.filter(like='LAI').values.flatten()
-CAB = field_data.filter(like='Cab').values.flatten() / 100.
+LAI_new = field_data.filter(like='S2').values.flatten()
+LAI_new = field_data.filter(like='LAI').values.flatten()
+CAB_new = field_data.filter(like='Cab').values.flatten() / 100.
 # CAB = field_data.filter(like='VWC').values.flatten() /np.max(field_data.filter(like='VWC').values.flatten()) * (field_data.filter(like='Height').values.flatten() / 100.)**2
 
-sm = field_data.filter(like='SM').values.flatten()
+sm_field = field_data.filter(like='SM').values.flatten()
 # sm = np.ones_like(LAI)*0.2
 
 vv_field = field_data.filter(like='sigma_sentinel_vv').values.flatten()
@@ -225,7 +225,13 @@ def run_SSRT(surface, vegetation, SAR):
 
     return vv, vh
 
-def warper(s, m_vv, omega_vv, m_vh, omega_vh):
+def wrapper(sm):
+
+    s = 0.02706007
+    m_vv = 0.68963347
+    omega_vv = 0.02892507
+    m_vh = 0.32105396
+    omega_vh = 0.00370084
 
     coef_vv = m_vv * CAB
     coef_vh = m_vh * CAB
@@ -245,14 +251,15 @@ def warper(s, m_vv, omega_vv, m_vh, omega_vh):
     return vv, vh
 
 def cost(p):
-    s , m_vv, omega_vv, m_vh, omega_vh = p
+    sm = p
     #m_vv, m_vh = p[:len(LAI)], p[len(LAI):]
     #m_vv, m_vh = p
-    vv, vh = warper(s, m_vv, omega_vv, m_vh, omega_vh)
+    vv, vh = wrapper(sm)
 
-    vv_diff = 10*np.log10(vv) - 10*np.log10(vv_field)
-    vh_diff = 10*np.log10(vh) - 10*np.log10(vh_field)
-    cost = vv_diff**2 + vh_diff**2
+    vv_diff = 10*np.log10(vv) - 10*np.log10(vv_field_value)
+    pdb.set_trace()
+    # vh_diff = 10*np.log10(vh) - 10*np.log10(vh_field_value)
+    cost = vv_diff**2
 
     if (~np.isfinite(cost)).all():
         cost = 999999
@@ -264,51 +271,82 @@ def cost(p):
 
 method = 'L-BFGS-B'
 
-ps = 0.0105
-pomega_vv = 0.027
-pomega_vh = 0.0115
-pm_vv = 1.4
-pm_vh = 0.8
-bounds = [(0.001, 0.03), (0.1,7), (0.001,0.04), (0.1,7), (0.001,0.04)]
+psm = 0.2
+bounds = [(0.001, 0.5)]
 
-guess = ps, pm_vv, pomega_vv, pm_vh, pomega_vh
-#guess = [1.4, 0.8]
-res = minimize(cost, guess, method=method, bounds = bounds)
-# solved = [0.02      , 0.00033854, 0.03      , 0.0105    , 0.01      ,
-       # 0.0115    ]
-# x = [0.38332326, 0.81561977, 0.45182801, 1.09407956, 1.23313943,
-#        0.89714312, 1.17532486, 1.50653822, 2.74042195, 2.03820864,
-#        1.2230573 , 0.60423899, 0.96138969, 0.91086824, 0.71054032,
-#        0.77363155, 0.93829323, 0.73741354, 0.72120546, 0.76153766,
-#        0.9678275 , 0.94895653, 0.9734852 , 0.99422879, 0.66862462,
-#        0.77009955, 1.08004441, 0.66832872, 0.94710929, 1.19456028,
-#        0.8068942 , 0.66108782, 1.16212088, 2.78515049, 0.91660068,
-#        1.59904955, 0.80583734, 0.80024366, 2.57320055, 1.75382239,
-#        0.9355827 , 0.96305127, 1.01815615, 0.72289155, 0.54808708,
-#        1.0539223 , 0.817248  , 0.70664043, 1.10129883, 0.51504796,
-#        0.61945984, 0.96577371, 0.62227635, 0.67872911, 1.77204458,
-#        0.85231337, 0.66896275, 1.2463534 , 0.50000511, 0.06927394,
-#        4.77100237, 3.91933208, 1.09205554, 1.00021858, 0.73680347,
-#        1.02012947, 1.35574597, 0.66192406, 2.08511774, 1.64193998,
-#        2.18341065, 1.98189336, 1.11971397, 0.55057736, 0.91173088,
-#        0.7321862 , 0.54286355, 0.92850208, 0.81496359, 0.70728337,
-#        0.79367924, 0.58072385, 0.47927211, 0.40612891, 0.61012018,
-#        0.64781564, 0.6720015 , 0.6522005 , 0.52473976, 0.81640084,
-#        0.45281958, 0.62125234, 0.67584209, 2.53014973, 1.14085623,
-#        0.93231227, 2.48610563, 2.58956798, 0.54825612, 2.17920273,
-#        0.86197714, 0.75560242, 0.58295085, 2.49279027, 0.82334317,
-#        2.41240002, 1.0794502 , 1.32633502, 1.5532141 , 0.68328073,
-#        0.70213215, 0.60101298, 0.36355202, 0.65086576, 0.41656313,
-#        0.28684925, 1.58539464, 0.34905093, 0.1408389 , 2.05825474,
-#        1.25328625, 1.11430827, 1.66874177, 8.68945532]
-# xxx = cost([0.00548515, 0.73296915, 0.02264721, 0.00776594, 0.32751273,
-       # 0.001     ])
+soilmoisture = []
+
+# for i, vv_field_value in enumerate(vv_field):
+#     LAI = LAI_new[i]
+#     CAB = CAB_new[i]
+#     theta = theta_new[i]
+#     guess = psm
+#     res = minimize(cost, guess, method=method, bounds = bounds)
+#     soilmoisture.append(res.x[0])
+
+lookup = {}
+lookup_lai = {}
+lookup_cab = {}
+lookup_theta = {}
+lookup_vv = {}
+vv_dreck = []
 
 
-vv, vh = warper(res.x[0], res.x[1], res.x[2], res.x[3], res.x[4])
-print(res.x)
-plt.plot(10*np.log10(vv_field))
-plt.plot(10*np.log10(vh_field))
-plt.plot(10*np.log10(vv))
-plt.plot(10*np.log10(vh))
-plt.show()
+# index =
+
+columns = ['LAI', 'CAB', 'theta', 'vv', 'sm']
+
+dx = pd.DataFrame(columns=columns)
+j=0
+for i, LAI in enumerate(np.arange(0.1,7,0.01)):
+    for ii, CAB in enumerate(np.arange(0.1,1,0.01)):
+        for iii, theta in enumerate(np.arange(0.1, 1, 0.01)):
+            for iiii, sm in enumerate(np.arange(0.01, 0.5, 0.01)):
+                vv, vh = wrapper(sm)
+
+                vv_dreck.append(vv)
+                dx2 = pd.DataFrame([[LAI,CAB,theta,float(vv),sm]], columns=columns,index=[j])
+                dx =dx.append(dx2)
+                j =j+1
+
+                # lookup[str(vv),str(LAI),str(CAB),str(theta)] = sm
+                # lookup_lai[str(LAI)] = LAI
+                # lookup_cab[str(CAB)] = CAB
+                # lookup_theta[str(theta)] = theta
+                # lookup_vv[str(vv)] = vv
+
+dx.to_csv('/media/tweiss/Daten/schlappi/lookup.csv')
+pdb.set_trace()
+
+index_LAI = abs(dx['LAI'] - 0.2).idxmin()
+dx_new = dx[dx['LAI']==dx['LAI'][index_LAI]]
+
+index_CAB = abs(dx_new['CAB'] - 0.2).idxmin()
+dx_new = dx_new[dx_new['CAB']==dx_new['CAB'][index_CAB]]
+
+index_theta = abs(dx_new['theta'] - 0.2).idxmin()
+dx_new = dx_new[dx_new['theta']==dx_new['theta'][index_theta]]
+
+index_vv = abs(dx_new['vv'] - 0.2).idxmin()
+dx_new = dx_new[dx_new['vv']==dx_new['vv'][index_vv]]
+
+pdb.set_trace()
+
+# xv, yv, zv, vx, se, sv = np.meshgrid(np.arange(0.1,7,1), np.arange(0.1,1,0.1), np.arange(0.1, 1, 0.1), vv_dreck, np.arange(0.01, 0.5, 0.1), 1)
+# np.min((abs(abs(dx['LAI'])-0.2)+0.2
+
+for i, LAI in enumerate(np.arange(0.1,7,1)):
+    for ii, CAB in enumerate(np.arange(0.1,1,0.1)):
+        for iii, theta in enumerate(np.arange(0.1, 1, 0.1)):
+            for iiii, sm in enumerate(np.arange(0.01, 0.5, 0.1)):
+                vv, vh = wrapper(sm)
+                coord=[LAI,CAB,theta,float(vv),sm]
+                index = np.argwhere((xv==coord[0]) & (yv==coord[1]) & (zv==coord[2]) & (vx==coord[3]) & (se==coord[4]))
+                print(index)
+                sv[index] = sm
+
+
+
+
+coord=[0.1,0.1,0.1,0.10732377322886114]
+np.argwhere((xv==coord[0]) & (yv==coord[1]) & (zv==coord[2]) & (vx==coord[3]))
