@@ -13,6 +13,8 @@ import scipy.stats
 from scipy.optimize import minimize, root
 import pdb
 import datetime
+import random
+import gp_emulator
 
 
 # Helper functions for statistical parameters
@@ -94,7 +96,7 @@ def read_data(path, file_name, extension, field, path_agro, file_name_agro, exte
     field_data = df.filter(like=field)
 
     # filter for relativorbit
-    # field_data_orbit = filter_relativorbit(field_data, field, 95, 168)
+    # field_data_orbit = filter_relativorbit(field_data, field+'_x', 168)
     # field_data = field_data_orbit
     field_data_orbit=0
 
@@ -191,7 +193,7 @@ theta = field_data.filter(like='theta').values.flatten()
 theta = np.deg2rad(theta)
 
 LAI = field_data.filter(like='S2').values.flatten()
-LAI = field_data.filter(like='LAI').values.flatten()
+# LAI = field_data.filter(like='LAI').values.flatten()
 CAB = field_data.filter(like='Cab').values.flatten() / 100.
 # CAB = field_data.filter(like='VWC').values.flatten() /np.max(field_data.filter(like='VWC').values.flatten()) * (field_data.filter(like='Height').values.flatten() / 100.)**2
 
@@ -307,8 +309,68 @@ res = minimize(cost, guess, method=method, bounds = bounds)
 
 vv, vh = warper(res.x[0], res.x[1], res.x[2], res.x[3], res.x[4])
 print(res.x)
-plt.plot(10*np.log10(vv_field))
-plt.plot(10*np.log10(vh_field))
+plt.figure(figsize=(20,10))
+plt.plot(10*np.log10(vv_field), label='vv dB in-situ')
+plt.plot(10*np.log10(vh_field), label='vh dB in-situ')
+plt.plot(10*np.log10(vv), label='vv dB calibrated model output')
+plt.plot(10*np.log10(vh), label='vh dB calibrated model output')
+plt.legend()
+plt.ylabel('backscatter in dB')
+plt.xlabel('time series')
+plt.savefig('/media/tweiss/Daten/calibration.png')
+# plt.show()
+# pdb.set_trace()
+
+gp = gp_emulator.GaussianProcess(emulator_file='/media/tweiss/Daten/emulator_ssrt_s2.npz')
+
+xxx = []
+for i in range(len(vv)):
+    xxx.append(random.uniform(0.5,1))
+
+
+
+
+# prediction = np.column_stack((10*np.log10(vv_field), 10*np.log10(vh_field), LAI, CAB, np.rad2deg(theta)))
+# prediction2 = np.column_stack((10*np.log10(vv), 10*np.log10(vh), LAI, CAB, np.rad2deg(theta)))
+# prediction3 = np.column_stack((10*np.log10(vv)+xxx, 10*np.log10(vh)+xxx, LAI, CAB, np.rad2deg(theta)))
+# prediction4 = np.column_stack((10*np.log10(vv)-xxx, 10*np.log10(vh)-xxx, LAI, CAB, np.rad2deg(theta)))
+
+prediction = np.column_stack((10*np.log10(vv_field), 10*np.log10(vh_field),  np.rad2deg(theta)))
+prediction2 = np.column_stack((10*np.log10(vv), 10*np.log10(vh),  np.rad2deg(theta)))
+prediction3 = np.column_stack((10*np.log10(vv)+xxx, 10*np.log10(vh)+xxx,  np.rad2deg(theta)))
+prediction4 = np.column_stack((10*np.log10(vv)-xxx, 10*np.log10(vh)-xxx,  np.rad2deg(theta)))
+
+
+
+# prediction5 = np.column_stack((10*np.log10(vv)-1.5, 10*np.log10(vh)-1.5, LAI, CAB, np.rad2deg(theta)))
+
+ypred, _, _ = gp.predict(prediction)
+ypred2, _, _ = gp.predict(prediction2)
+ypred3, _, _ = gp.predict(prediction3)
+ypred4, _, _ = gp.predict(prediction4)
+# ypred5, _, _ = gp.predict(prediction5)
+
+plt.figure(figsize=(20,10))
+plt.plot(sm, label='soil moisture (in-situ)')
+plt.plot(ypred, label='soil moisture (retrieval with S1 backscatter)')
+plt.plot(ypred2, label='soil moisture (retrieval with backscatter output of calibration)')
+plt.plot(ypred3, '--', label='soil moisture (retrieval with backscatter output of calibration+random dB value between 0.5 and 1)')
+plt.plot(ypred4, '--', label='soil moisture (retrieval with backscatter output of calibration+random dB value between -1 and -0.5)')
+# plt.plot(ypred5, '--', label='soil moisture (retrieval with backscatter output of calibration+random dB value of 1)')
+plt.ylim((0.1,0.4))
+plt.title('Soil Moisture Retrieval Winter Wheat field 508')
+plt.ylabel('soil moisture')
+plt.xlabel('time series')
+plt.legend()
+plt.savefig('/media/tweiss/Daten/soil_moisture_retrieval2.png')
+# plt.show()
+plt.close()
+plt.close()
+
+sm = ypred
+vv, vh = warper(res.x[0], res.x[1], res.x[2], res.x[3], res.x[4])
 plt.plot(10*np.log10(vv))
 plt.plot(10*np.log10(vh))
-plt.show()
+plt.plot(10*np.log10(vv_field))
+plt.plot(10*np.log10(vh_field))
+
