@@ -28,22 +28,13 @@ def linregress(predictions, targets):
     slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(predictions, targets)
     return slope, intercept, r_value, p_value, std_err
 
-def read_mni_data(path, file_name, extention, field, sep=';'):
+def read_mni_data(path, file_name, extention, field, sep=','):
     """ read MNI campaign data """
     df = pd.io.parsers.read_csv(os.path.join(path, file_name + extension), header=[0, 1], sep=sep)
     pd.to_datetime(df[field]['date']).dt.date
     df = df.set_index(pd.to_datetime(df[field]['date']).dt.date)
-    # X=np.loadtxt("http://www2.geog.ucl.ac.uk/~ucfajlg/LMU_LAI_doy2017.txt")
-    # xx = np.arange(1, 366)
-    # lai_interp = np.interp(xx, X[:,0], X[:,1])
-    # date_lai = datetime.date(2017, 1, 1) + datetime.timedelta(days=365)
-    # xxx = datetime.date(2017,1,1) + xx * datetime.timedelta(days=1)
-    # array = [[xxx],[lai_interp]]
-    # tuples = list(zip(*arrays))
-    # index = pd.MultiIndex.from_tuples(tuples, names=['first', 'second'])
-    # dd = pd.DataFrame({'date':xxx, 'S2':lai_interp})
-    # pdb.set_trace()
-    dd = pd.io.parsers.read_csv(os.path.join('/media/tweiss/Daten/schlappi/params_S2.csv'), header=[0, 1], sep=',')
+
+    dd = pd.io.parsers.read_csv(os.path.join('/media/tweiss/Daten/buffer/params_S2_rfieldbuffer50.csv'), header=[0, 1], sep=',')
     ddd = dd.set_index(pd.to_datetime(dd['508_high']['date']).dt.date)
     merge=pd.merge(df,ddd, how='inner', left_index=True, right_index=True)
     df = merge
@@ -67,7 +58,7 @@ def filter_relativorbit(data, field, orbit1, orbit2=None, orbit3=None, orbit4=No
     output = data[[(check == orbit1 or check == orbit2 or check == orbit3 or check == orbit4) for check in data[(field,'relativeorbit')]]]
     return output
 
-def smooth(x,window_len=11,window='hanning'):
+def smooth(x,window_len=1,window='hanning'):
         if x.ndim != 1:
                 raise ValueError #, "smooth only accepts 1 dimension arrays."
         if x.size < window_len:
@@ -114,66 +105,15 @@ def read_data(path, file_name, extension, field, path_agro, file_name_agro, exte
     lai_field2 = field_data.filter(like='S2')
     vwc_field = field_data.filter(like='VWC')
     pol_field = field_data.filter(like='sigma_sentinel_'+pol)
-    # pdb.set_trace()
+
     return df, df_agro, field_data, field_data_orbit, theta_field, sm_field, height_field, lai_field, vwc_field, pol_field, height_field2, lai_field2
 
-### Optimization ###
-#-----------------------------------------------------------------
-def solve_fun(VALS):
-
-    for i in range(len(var_opt)):
-        dic[var_opt[i]] = VALS[i]
-
-    ke = dic['coef'] * np.sqrt(dic['lai'])
-    # ke = dic['coef'] * np.sqrt(dic['vwc'])
-    # ke=1
-    dic['ke'] = ke
-
-    # surface
-    soil = Soil(mv=dic['mv'], C_hh=dic['C_hh'], C_vv=dic['C_vv'], D_hh=dic['D_hh'], D_vv=dic['D_vv'], C_hv=dic['C_hv'], D_hv=dic['D_hv'], V2=dic['V2'], s=dic['s'], clay=dic['clay'], sand=dic['sand'], f=dic['f'], bulk=dic['bulk'], l=dic['l'])
-
-    # canopy
-    can = OneLayer(canopy=dic['canopy'], ke_h=dic['ke'], ke_v=dic['ke'], d=dic['d'], ks_h = dic['omega']*dic['ke'], ks_v = dic['omega']*dic['ke'], V1=dic['V1'], V2=dic['V2'], A_hh=dic['A_hh'], B_hh=dic['B_hh'], A_vv=dic['A_vv'], B_vv=dic['B_vv'], A_hv=dic['A_hv'], B_hv=dic['B_hv'])
-
-    S = model.RTModel(surface=soil, canopy=can, models=models, theta=dic['theta'], freq=dic['f'])
-    S.sigma0()
-
-    return S.__dict__['stot'][pol[::-1]]
-
-def fun_opt(VALS):
-    # pdb.set_trace()
-
-    # return(10.*np.log10(np.nansum(np.square(solve_fun(VALS)-dic['pol_value']))))
-    return(np.nansum(np.square(solve_fun(VALS)-dic['pol_value'])))
-
-def data_optimized_run(n, field_data, theta_field, sm_field, height_field, lai_field, vwc_field, pol):
-    n = np.int(np.floor(n/2))
-
-    if n > 0:
-        field_data = field_data.drop(field_data.index[-n:])
-        field_data = field_data.drop(field_data.index[0:n])
-        theta_field = theta_field.drop(theta_field.index[-n:])
-        theta_field = theta_field.drop(theta_field.index[0:n])
-
-    sm_field = field_data.filter(like='SM')
-    height_field = field_data.filter(like='Height')/100
-    # height_field = field_data.filter(like='Cab')/100
-    # lai_field = field_data.filter(like='S2')
-    lai_field = field_data.filter(like='LAI')
-    vwc_field = field_data.filter(like='VWC')
-
-    vv_field = field_data.filter(like='sigma_sentinel_vv')
-    vh_field = field_data.filter(like='sigma_sentinel_vh')
-
-    pol_field = field_data.filter(like='sigma_sentinel_'+pol)
-    return field_data, theta_field, sm_field, height_field, lai_field, vwc_field, vv_field, vh_field, pol_field
-#-----------------------------------------------------------------
 
 ### Data preparation ###
 #-----------------------------------------------------------------
 # storage information
-path = '/media/tweiss/Daten/schlappi'
-file_name = 'multi10' # theta needs to be changed to for norm multi
+path = '/media/tweiss/Daten/buffer'
+file_name = 'multi_fieldbuffer50' # theta needs to be changed to for norm multi
 extension = '.csv'
 
 path_agro = '/media/nas_data/2017_MNI_campaign/field_data/meteodata/agrarmeteorological_station'
@@ -271,41 +211,11 @@ pomega_vv = 0.027
 pomega_vh = 0.0115
 pm_vv = 1.4
 pm_vh = 0.8
-bounds = [(0.001, 0.03), (0.1,7), (0.001,0.04), (0.1,7), (0.001,0.04)]
+bounds = [(0.001, 10.03), (0.1,17), (0.001,10.07), (0.1,17), (0.001,10.04)]
 
 guess = ps, pm_vv, pomega_vv, pm_vh, pomega_vh
-#guess = [1.4, 0.8]
-res = minimize(cost, guess, method=method, bounds = bounds)
-# solved = [0.02      , 0.00033854, 0.03      , 0.0105    , 0.01      ,
-       # 0.0115    ]
-# x = [0.38332326, 0.81561977, 0.45182801, 1.09407956, 1.23313943,
-#        0.89714312, 1.17532486, 1.50653822, 2.74042195, 2.03820864,
-#        1.2230573 , 0.60423899, 0.96138969, 0.91086824, 0.71054032,
-#        0.77363155, 0.93829323, 0.73741354, 0.72120546, 0.76153766,
-#        0.9678275 , 0.94895653, 0.9734852 , 0.99422879, 0.66862462,
-#        0.77009955, 1.08004441, 0.66832872, 0.94710929, 1.19456028,
-#        0.8068942 , 0.66108782, 1.16212088, 2.78515049, 0.91660068,
-#        1.59904955, 0.80583734, 0.80024366, 2.57320055, 1.75382239,
-#        0.9355827 , 0.96305127, 1.01815615, 0.72289155, 0.54808708,
-#        1.0539223 , 0.817248  , 0.70664043, 1.10129883, 0.51504796,
-#        0.61945984, 0.96577371, 0.62227635, 0.67872911, 1.77204458,
-#        0.85231337, 0.66896275, 1.2463534 , 0.50000511, 0.06927394,
-#        4.77100237, 3.91933208, 1.09205554, 1.00021858, 0.73680347,
-#        1.02012947, 1.35574597, 0.66192406, 2.08511774, 1.64193998,
-#        2.18341065, 1.98189336, 1.11971397, 0.55057736, 0.91173088,
-#        0.7321862 , 0.54286355, 0.92850208, 0.81496359, 0.70728337,
-#        0.79367924, 0.58072385, 0.47927211, 0.40612891, 0.61012018,
-#        0.64781564, 0.6720015 , 0.6522005 , 0.52473976, 0.81640084,
-#        0.45281958, 0.62125234, 0.67584209, 2.53014973, 1.14085623,
-#        0.93231227, 2.48610563, 2.58956798, 0.54825612, 2.17920273,
-#        0.86197714, 0.75560242, 0.58295085, 2.49279027, 0.82334317,
-#        2.41240002, 1.0794502 , 1.32633502, 1.5532141 , 0.68328073,
-#        0.70213215, 0.60101298, 0.36355202, 0.65086576, 0.41656313,
-#        0.28684925, 1.58539464, 0.34905093, 0.1408389 , 2.05825474,
-#        1.25328625, 1.11430827, 1.66874177, 8.68945532]
-# xxx = cost([0.00548515, 0.73296915, 0.02264721, 0.00776594, 0.32751273,
-       # 0.001     ])
 
+res = minimize(cost, guess, method=method, bounds = bounds)
 
 vv, vh = warper(res.x[0], res.x[1], res.x[2], res.x[3], res.x[4])
 print(res.x)
@@ -317,11 +227,12 @@ plt.plot(10*np.log10(vh), label='vh dB calibrated model output')
 plt.legend()
 plt.ylabel('backscatter in dB')
 plt.xlabel('time series')
-plt.savefig('/media/tweiss/Daten/calibration.png')
-# plt.show()
-# pdb.set_trace()
+plt.ylim((-27.5,-7.5))
+plt.savefig('/media/tweiss/Daten/buffer/calibrationfieldbuffer50.png')
 
-gp = gp_emulator.GaussianProcess(emulator_file='/media/tweiss/Daten/emulator_ssrt_s2.npz')
+pdb.set_trace()
+
+gp = gp_emulator.GaussianProcess(emulator_file='/media/tweiss/Daten/buffer/emulator_ssrt_s2_rfield.npz')
 
 xxx = []
 for i in range(len(vv)):
