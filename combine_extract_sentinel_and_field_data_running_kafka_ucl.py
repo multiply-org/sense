@@ -472,7 +472,7 @@ for field in fields:
     df_output[field + '_mean', 'theta'] = theta_mean
 
 
-save_path = '/media/tweiss/Daten/buffer_2'
+save_path = 'data_kafka/'
 df_output.to_csv(os.path.join(save_path, processed_sentinel_data + '_'+radius+'.csv'), encoding='utf-8', sep=',', float_format='%.4f')
 
 
