@@ -534,5 +534,5 @@ ax.legend()
 ax1.legend()
 ax2.legend()
 ax3.legend()
-pdb.set_trace()
+
 plt.savefig('/media/tweiss/Work/GIT/GitHub/PMarzahn/pygeo/sense/data_kafka/soil_moisture_retrieval_r'+radius+'m.png')
