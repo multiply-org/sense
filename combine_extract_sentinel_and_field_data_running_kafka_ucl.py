@@ -182,10 +182,10 @@ f = 5.405
 #------------------------------------------------------------------------------
 
 # LAI path
-path = '/media/nas_data/2017_MNI_campaign/field_data/field_measurements/vegetation/revised/csv'
+path = 'data_kafka/insitu/vegetation'
 
 # SM path
-path_SM = '/media/nas_data/2017_MNI_campaign/field_data/field_measurements/soil_moisture/data_revised'
+path_SM = 'data_kafka/insitu/soil_moisture/'
 
 # field names
 # fields = ['301', '508', '542', '319', '515']
